@@ -4,7 +4,7 @@ A Flutter application implementing strict MVVM architecture with secure authenti
 
 ---
 
-## 👥 Team Members & Roles
+## Team Members & Roles
 
 | Member | Role | Responsibilities |
 |--------|------|------------------|
@@ -16,24 +16,24 @@ A Flutter application implementing strict MVVM architecture with secure authenti
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Features
-- ✅ Secure User Registration (Email/Password)
-- ✅ User Login with validation
-- ✅ View & Edit User Profile
-- ✅ Biometric Authentication (Fingerprint/FaceID)
-- ✅ Secure Token Storage
-- ✅ Google Sign-In Integration
-- ✅ Multi-provider state management (Provider)
+- Secure User Registration (Email/Password)
+- User Login with validation
+- View & Edit User Profile
+- Biometric Authentication (Fingerprint/FaceID)
+- Secure Token Storage
+- Google Sign-In Integration
+- Multi-provider state management (Provider)
 
 ### Bonus Features (Optional)
-- 🎁 Facebook Login (+5 pts)
-- 🎁 Dark Mode Toggle with persistence (+5 pts)
+- Facebook Login (+5 pts)
+- Dark Mode Toggle with persistence (+5 pts)
 
 ---
 
-## 🏗️ Project Structure (Strict MVVM)
+## Project Structure (Strict MVVM)
 
 ```
 lib/
@@ -59,7 +59,7 @@ lib/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Flutter SDK (3.10.7 or higher)
@@ -82,7 +82,7 @@ flutter run
 
 ---
 
-## 🔒 Security Features
+## Security Features
 
 ### Password Requirements
 - Minimum 8 characters
@@ -96,7 +96,7 @@ flutter run
 
 ---
 
-## 📱 Building APK
+## Building APK
 
 ```bash
 # Build release APK
@@ -107,7 +107,7 @@ flutter build apk --release
 
 ---
 
-## 🔑 Dependencies
+## Dependencies
 
 ```yaml
 provider: ^6.0.5          # State management
@@ -115,7 +115,7 @@ provider: ^6.0.5          # State management
 
 ---
 
-## 📋 Development Guidelines
+## Development Guidelines
 
 ### Naming Conventions
 - Classes: PascalCase (e.g., `AuthViewModel`)
@@ -130,7 +130,7 @@ provider: ^6.0.5          # State management
 
 ---
 
-## 🧪 Testing Checklist
+## Testing Checklist
 
 - [ ] Registration with valid/invalid credentials
 - [ ] Login functionality
@@ -144,14 +144,9 @@ provider: ^6.0.5          # State management
 
 ---
 
-## 📝 Submission Requirements
+## Submission Requirements
 
-- ✅ Public GitHub Repository
-- ✅ README.md with team members & roles
-- ⏳ APK file (.apk compiled) - To be added after development
+- Public GitHub Repository
+- README.md with team members & roles
+- APK file (.apk compiled) - To be added after development
 
----
-
-## 📄 License
-
-Academic Project - Information Assurance and Security 2
