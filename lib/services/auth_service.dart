@@ -1,17 +1,23 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import 'storage_service.dart';
 
-/// Mock Firebase-like Authentication Service
-/// In production, replace with actual Firebase authentication
+/// Clean, single-file AuthService
+/// Supports: Email/Password, Google, Facebook via Firebase
 class AuthService {
-  final StorageService _storageService = StorageService();
+  // singleton
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal();
 
-  // Mock user database (in production, this would be Firebase)
-  static final Map<String, Map<String, dynamic>> _mockUserDatabase = {};
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FacebookAuth _facebookAuth = FacebookAuth.instance;
+  final StorageService _storage = StorageService();
 
-  /// Register a new user with email and password
+  // ---------------- Email/Password ----------------
   Future<UserModel> registerWithEmail({
     required String firstName,
     required String lastName,
@@ -19,163 +25,137 @@ class AuthService {
     required String password,
   }) async {
     try {
-      // Check if user already exists
-      if (_mockUserDatabase.containsKey(email.toLowerCase())) {
-        throw Exception('Email is already registered');
-      }
-
-      // Create new user
-      final uid = 'user_${DateTime.now().millisecondsSinceEpoch}';
-      final user = UserModel(
-        uid: uid,
-        firstName: firstName,
-        lastName: lastName,
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
-        createdAt: DateTime.now(),
-        biometricEnabled: false,
+        password: password,
       );
+      final user = userCredential.user;
+      if (user == null) throw Exception('Registration failed');
 
-      // Store user data in mock database
-      _mockUserDatabase[email.toLowerCase()] = {
-        'uid': uid,
-        'firstName': firstName,
-        'lastName': lastName,
-        'email': email,
-        'passwordHash': _hashPassword(password),
-        'createdAt': DateTime.now().toIso8601String(),
-        'biometricEnabled': false,
-      };
+      await user.updateDisplayName('$firstName $lastName');
+      await user.reload();
 
-      // Generate mock token
-      final token = _generateMockToken(uid, email);
-      await _storageService.saveToken(token);
+      final token = await user.getIdToken();
+      if (token != null) await _storage.saveToken(token);
 
-      return user;
-    } catch (e) {
-      throw Exception('Registration failed: ${e.toString()}');
+      return _toUserModel(user);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
     }
   }
 
-  /// Login with email and password
   Future<UserModel> loginWithEmail({
     required String email,
     required String password,
   }) async {
     try {
-      final userData = _mockUserDatabase[email.toLowerCase()];
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = userCredential.user;
+      if (user == null) throw Exception('Login failed');
 
-      if (userData == null) {
-        throw Exception('User not found');
-      }
+      final token = await user.getIdToken();
+      if (token != null) await _storage.saveToken(token);
 
-      // Verify password
-      if (_verifyPassword(password, userData['passwordHash'])) {
-        final token = _generateMockToken(userData['uid'], email);
-        await _storageService.saveToken(token);
-
-        return UserModel(
-          uid: userData['uid'],
-          firstName: userData['firstName'],
-          lastName: userData['lastName'],
-          email: userData['email'],
-          createdAt: DateTime.parse(userData['createdAt']),
-          biometricEnabled: userData['biometricEnabled'] ?? false,
-        );
-      } else {
-        throw Exception('Invalid password');
-      }
-    } catch (e) {
-      throw Exception('Login failed: ${e.toString()}');
+      return _toUserModel(user);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
     }
   }
 
-  /// Google Sign-In (currently using mock implementation)
-  /// In production, integrate with Firebase Google Sign-In
+  // ---------------- Google ----------------
   Future<UserModel> signInWithGoogle() async {
     try {
-      // Mock Google Sign-In
-      // In production: Use google_sign_in package
-      final mockGoogleUser = {
-        'uid': 'google_${DateTime.now().millisecondsSinceEpoch}',
-        'firstName': 'Google',
-        'lastName': 'User',
-        'email': 'user@gmail.com',
-        'profileImageUrl':
-            'https://lh3.googleusercontent.com/a/default-user=s96-c',
-      };
+      // Sign out first to force account picker
+      await _googleSignIn.signOut();
 
-      final user = UserModel(
-        uid: mockGoogleUser['uid']!,
-        firstName: mockGoogleUser['firstName']!,
-        lastName: mockGoogleUser['lastName']!,
-        email: mockGoogleUser['email']!,
-        profileImageUrl: mockGoogleUser['profileImageUrl'],
-        createdAt: DateTime.now(),
-        biometricEnabled: false,
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) throw Exception('Google Sign-In cancelled');
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
-      // Store user if new
-      if (!_mockUserDatabase.containsKey(
-        mockGoogleUser['email']!.toLowerCase(),
-      )) {
-        _mockUserDatabase[mockGoogleUser['email']!.toLowerCase()] = {
-          ...mockGoogleUser,
-          'createdAt': DateTime.now().toIso8601String(),
-        };
-      }
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) throw Exception('Google Sign-In failed');
 
-      final token = _generateMockToken(user.uid, user.email);
-      await _storageService.saveToken(token);
+      final token = await user.getIdToken();
+      if (token != null) await _storage.saveToken(token);
 
-      return user;
+      return _toUserModel(user);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
     } catch (e) {
-      throw Exception('Google Sign-In failed: ${e.toString()}');
+      throw Exception('Google Sign-In error: ${e.toString()}');
     }
   }
 
-  /// Facebook Sign-In (bonus feature)
-  /// In production, integrate with facebook_flutter package
+  // ---------------- Facebook ----------------
   Future<UserModel> signInWithFacebook() async {
     try {
-      // Mock Facebook Sign-In
-      final mockFacebookUser = {
-        'uid': 'facebook_${DateTime.now().millisecondsSinceEpoch}',
-        'firstName': 'Facebook',
-        'lastName': 'User',
-        'email': 'user@facebook.com',
-        'profileImageUrl':
-            'https://platform-lookaside.fbsbx.com/platform/profilepic/default.png',
-      };
-
-      final user = UserModel(
-        uid: mockFacebookUser['uid']!,
-        firstName: mockFacebookUser['firstName']!,
-        lastName: mockFacebookUser['lastName']!,
-        email: mockFacebookUser['email']!,
-        profileImageUrl: mockFacebookUser['profileImageUrl'],
-        createdAt: DateTime.now(),
-        biometricEnabled: false,
+      // Configure Facebook auth permissions
+      final LoginResult result = await _facebookAuth.login(
+        permissions: ['email', 'public_profile'],
       );
 
-      if (!_mockUserDatabase.containsKey(
-        mockFacebookUser['email']!.toLowerCase(),
-      )) {
-        _mockUserDatabase[mockFacebookUser['email']!.toLowerCase()] = {
-          ...mockFacebookUser,
-          'createdAt': DateTime.now().toIso8601String(),
-        };
+      if (result.status == LoginStatus.cancelled) {
+        throw Exception('Facebook Sign-In cancelled');
+      }
+      if (result.status == LoginStatus.failed) {
+        throw Exception('Facebook Sign-In failed: ${result.message}');
       }
 
-      final token = _generateMockToken(user.uid, user.email);
-      await _storageService.saveToken(token);
+      final accessToken = result.accessToken;
+      if (accessToken == null) throw Exception('No Facebook access token');
 
-      return user;
+      // Safely extract token from AccessToken
+      final fbToken = accessToken.tokenString;
+      if (fbToken.isEmpty) {
+        throw Exception('No Facebook access token value');
+      }
+
+      final credential = FacebookAuthProvider.credential(fbToken);
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) throw Exception('Facebook Sign-In failed');
+
+      final token = await user.getIdToken();
+      if (token != null) await _storage.saveToken(token);
+
+      return _toUserModel(user);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
     } catch (e) {
-      throw Exception('Facebook Sign-In failed: ${e.toString()}');
+      throw Exception('Facebook Sign-In error: ${e.toString()}');
     }
   }
 
-  /// Update user profile
+  // ---------------- User management ----------------
+  Future<UserModel?> getCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    final token = await user.getIdToken();
+    if (token != null) await _storage.saveToken(token);
+    return _toUserModel(user);
+  }
+
+  Future<void> logout() async {
+    await _auth.signOut();
+    // Sign out from Google and Facebook as well
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+    try {
+      await _facebookAuth.logOut();
+    } catch (_) {}
+    await _storage.clearToken();
+  }
+
   Future<UserModel> updateUserProfile({
     required String uid,
     required String firstName,
@@ -183,112 +163,74 @@ class AuthService {
     String? bio,
     String? profileImageUrl,
   }) async {
-    try {
-      // Find and update user in mock database
-      String? emailKey;
-      for (var entry in _mockUserDatabase.entries) {
-        if (entry.value['uid'] == uid) {
-          emailKey = entry.key;
-          break;
-        }
-      }
-
-      if (emailKey == null) {
-        throw Exception('User not found');
-      }
-
-      _mockUserDatabase[emailKey]!.addAll({
-        'firstName': firstName,
-        'lastName': lastName,
-        'bio': bio,
-        'profileImageUrl': profileImageUrl,
-      });
-
-      return UserModel(
-        uid: uid,
-        firstName: firstName,
-        lastName: lastName,
-        email: emailKey,
-        bio: bio,
-        profileImageUrl: profileImageUrl,
-        createdAt: DateTime.parse(_mockUserDatabase[emailKey]!['createdAt']),
-        biometricEnabled:
-            _mockUserDatabase[emailKey]!['biometricEnabled'] ?? false,
-      );
-    } catch (e) {
-      throw Exception('Profile update failed: ${e.toString()}');
+    final user = _auth.currentUser;
+    if (user == null || user.uid != uid) {
+      throw Exception('User not authenticated');
     }
+
+    await user.updateDisplayName('$firstName $lastName');
+    await user.reload();
+
+    final token = await user.getIdToken();
+    if (token != null) await _storage.saveToken(token);
+
+    return UserModel(
+      uid: uid,
+      firstName: firstName,
+      lastName: lastName,
+      email: user.email ?? '',
+      bio: bio,
+      profileImageUrl: profileImageUrl,
+      createdAt: user.metadata.creationTime ?? DateTime.now(),
+      biometricEnabled: false,
+    );
   }
 
-  /// Get current user from token
-  Future<UserModel?> getCurrentUser() async {
-    try {
-      final token = await _storageService.getToken();
-      if (token == null) return null;
+  Stream<UserModel?> get authStateStream => _auth.authStateChanges().asyncMap(
+    (u) async => u == null ? null : _toUserModel(u),
+  );
 
-      // Decode token to get user info (mock implementation)
-      final decoded = _decodeMockToken(token);
-      if (decoded == null) return null;
+  User? get currentFirebaseUser => _auth.currentUser;
 
-      final userData = _mockUserDatabase[decoded['email']];
-      if (userData == null) return null;
-
-      return UserModel(
-        uid: userData['uid'],
-        firstName: userData['firstName'],
-        lastName: userData['lastName'],
-        email: userData['email'],
-        profileImageUrl: userData['profileImageUrl'],
-        bio: userData['bio'],
-        createdAt: DateTime.parse(userData['createdAt']),
-        biometricEnabled: userData['biometricEnabled'] ?? false,
-      );
-    } catch (e) {
-      debugPrint('Error getting current user: $e');
-      return null;
-    }
+  // ---------------- Helpers ----------------
+  UserModel _toUserModel(User u) {
+    final displayName = u.displayName ?? '';
+    final parts = displayName.split(' ');
+    return UserModel(
+      uid: u.uid,
+      firstName: parts.isNotEmpty ? parts.first : 'User',
+      lastName: parts.length > 1 ? parts.sublist(1).join(' ') : '',
+      email: u.email ?? '',
+      profileImageUrl: u.photoURL,
+      createdAt: u.metadata.creationTime ?? DateTime.now(),
+      biometricEnabled: false,
+    );
   }
 
-  /// Logout user
-  Future<void> logout() async {
-    try {
-      await _storageService.clearToken();
-    } catch (e) {
-      throw Exception('Logout failed: ${e.toString()}');
-    }
-  }
-
-  // ========== Helper Methods ==========
-
-  /// Mock password hashing (in production, use bcrypt or argon2)
-  static String _hashPassword(String password) {
-    // Simple hash for mock purposes
-    return 'hashed_$password';
-  }
-
-  /// Mock password verification (in production, use proper crypto)
-  static bool _verifyPassword(String password, String hash) {
-    return hash == 'hashed_$password';
-  }
-
-  /// Generate mock JWT token
-  static String _generateMockToken(String uid, String email) {
-    final payload = {
-      'uid': uid,
-      'email': email,
-      'iat': DateTime.now().millisecondsSinceEpoch,
-    };
-    // Simple base64 encoding for mock (not secure for production)
-    return base64Encode(utf8.encode(jsonEncode(payload)));
-  }
-
-  /// Decode mock token
-  static Map<String, dynamic>? _decodeMockToken(String token) {
-    try {
-      final decoded = utf8.decode(base64Decode(token));
-      return jsonDecode(decoded);
-    } catch (e) {
-      return null;
+  Exception _mapFirebaseAuthException(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'weak-password':
+        return Exception('Password is too weak');
+      case 'operation-not-allowed':
+        return Exception(
+          'This sign-in method is disabled for this Firebase project. Enable it in the Firebase console under Authentication → Sign-in method.',
+        );
+      case 'email-already-in-use':
+        return Exception('Email is already registered');
+      case 'invalid-email':
+        return Exception('Invalid email address');
+      case 'user-not-found':
+        return Exception('User not found');
+      case 'wrong-password':
+        return Exception('Wrong password');
+      case 'user-disabled':
+        return Exception('User account is disabled');
+      case 'too-many-requests':
+        return Exception('Too many login attempts. Try again later');
+      case 'network-request-failed':
+        return Exception('Network error. Check your connection');
+      default:
+        return Exception('Authentication error: ${e.message}');
     }
   }
 }

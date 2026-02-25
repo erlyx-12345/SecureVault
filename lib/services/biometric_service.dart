@@ -12,6 +12,12 @@ class BiometricService {
     }
   }
 
+  /// Alias for backwards compatibility: some callers use `isBiometricAvailable()`
+  /// while others use `canCheckBiometrics()`. Keep both to avoid breaking callers.
+  Future<bool> isBiometricAvailable() async {
+    return await canCheckBiometrics();
+  }
+
   Future<bool> authenticate() async {
     try {
       final isAvailable = await canCheckBiometrics();
