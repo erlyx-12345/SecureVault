@@ -45,6 +45,13 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
+  /// Set user data from AuthViewModel
+  Future<void> setUser(UserModel user) async {
+    _user = user;
+    _biometricEnabled = await _storageService.getBiometricEnabled();
+    notifyListeners();
+  }
+
   /// Update user profile
   Future<bool> updateProfile({
     required String firstName,

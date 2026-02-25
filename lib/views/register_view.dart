@@ -18,7 +18,8 @@ class _RegisterViewState extends State<RegisterView> {
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -88,10 +89,7 @@ class _RegisterViewState extends State<RegisterView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppColors.darkOlive,
-              AppColors.neonLime,
-            ],
+            colors: [AppColors.darkOlive, AppColors.neonLime],
           ),
         ),
         child: Column(
@@ -102,7 +100,10 @@ class _RegisterViewState extends State<RegisterView> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      color: AppColors.textPrimary,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Expanded(
@@ -165,7 +166,9 @@ class _RegisterViewState extends State<RegisterView> {
                           isPassword: true,
                           obscureText: _obscurePassword,
                           onTogglePassword: () {
-                            setState(() => _obscurePassword = !_obscurePassword);
+                            setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            );
                           },
                           validator: Validators.validatePassword,
                         ),
@@ -177,10 +180,16 @@ class _RegisterViewState extends State<RegisterView> {
                           isPassword: true,
                           obscureText: _obscureConfirmPassword,
                           onTogglePassword: () {
-                            setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                            setState(
+                              () => _obscureConfirmPassword =
+                                  !_obscureConfirmPassword,
+                            );
                           },
                           validator: (value) =>
-                              Validators.validateConfirmPassword(value, _passwordController.text),
+                              Validators.validateConfirmPassword(
+                                value,
+                                _passwordController.text,
+                              ),
                         ),
                         const SizedBox(height: 40),
                         Consumer<AuthViewModel>(
@@ -204,10 +213,14 @@ class _RegisterViewState extends State<RegisterView> {
                                         color: AppColors.darkBackground,
                                       )
                                     : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: const [
-                                          Icon(Icons.auto_awesome,
-                                              color: AppColors.darkBackground, size: 20),
+                                          Icon(
+                                            Icons.auto_awesome,
+                                            color: AppColors.darkBackground,
+                                            size: 20,
+                                          ),
                                           SizedBox(width: 8),
                                           Text(
                                             AppStrings.registerButton,
@@ -285,13 +298,18 @@ class _RegisterViewState extends State<RegisterView> {
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
-                      obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      obscureText
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: AppColors.textHint,
                     ),
                     onPressed: onTogglePassword,
                   )
                 : null,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
               borderSide: const BorderSide(color: AppColors.borderLight),

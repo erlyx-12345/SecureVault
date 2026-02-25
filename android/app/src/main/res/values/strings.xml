@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">SecureVault</string>
+
+    <!-- Google default web client id (replace with real value when enabling Google Sign-In) -->
+    <string name="default_web_client_id">272991932657-mfbpvv8bkb2qnk4fjkqi5lpr31e0mumv.apps.googleusercontent.com</string>
+    <!-- Google default android client id -->
+    <string name="default_android_client_id">272991932657-48adc42b5cc3441e671950.apps.googleusercontent.com</string>
+
+    <!-- Facebook app id -->
+    <string name="facebook_app_id">909814848358637</string>
+    <string name="fb_login_protocol_scheme">fb909814848358637</string>
+</resources>

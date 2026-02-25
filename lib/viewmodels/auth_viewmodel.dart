@@ -31,7 +31,8 @@ class AuthViewModel extends ChangeNotifier {
     try {
       _currentUser = await _authService.getCurrentUser();
       _isAuthenticated = _currentUser != null;
-      _biometricAvailable = await _biometricService.canCheckBiometrics();
+      // Use BiometricService API to check availability
+      _biometricAvailable = await _biometricService.isBiometricAvailable();
       _clearError();
     } catch (e) {
       _setError('Initialization failed: ${e.toString()}');

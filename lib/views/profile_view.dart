@@ -31,13 +31,21 @@ class _ProfileViewState extends State<ProfileView> {
     _bioController = TextEditingController();
 
     // Initialize ProfileViewModel
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileViewModel>().initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final authVM = context.read<AuthViewModel>();
+      final profileVM = context.read<ProfileViewModel>();
+      if (authVM.currentUser != null) {
+        await profileVM.setUser(authVM.currentUser!);
+      } else {
+        await profileVM.initialize();
+      }
     });
   }
 
   Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+    );
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -126,10 +134,7 @@ class _ProfileViewState extends State<ProfileView> {
                           gradient: LinearGradient(
                             begin: Alignment.bottomLeft,
                             end: Alignment.topRight,
-                            colors: [
-                              AppColors.darkOlive,
-                              Color(0xFF2D3516),
-                            ],
+                            colors: [AppColors.darkOlive, Color(0xFF2D3516)],
                           ),
                         ),
                       ),
@@ -153,13 +158,18 @@ class _ProfileViewState extends State<ProfileView> {
                                       backgroundImage: _imageFile != null
                                           ? FileImage(_imageFile!)
                                           : profileVM.profileImageUrl != null
-                                              ? NetworkImage(profileVM.profileImageUrl!)
-                                              : null,
-                                      child: (_imageFile == null &&
+                                          ? NetworkImage(
+                                              profileVM.profileImageUrl!,
+                                            )
+                                          : null,
+                                      child:
+                                          (_imageFile == null &&
                                               profileVM.profileImageUrl == null)
-                                          ? const Icon(Icons.person,
+                                          ? const Icon(
+                                              Icons.person,
                                               size: 60,
-                                              color: Colors.white24)
+                                              color: Colors.white24,
+                                            )
                                           : null,
                                     ),
                                   ),
@@ -172,8 +182,11 @@ class _ProfileViewState extends State<ProfileView> {
                                         color: AppColors.neonLime,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.camera_alt,
-                                          size: 18, color: AppColors.darkBackground),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        size: 18,
+                                        color: AppColors.darkBackground,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -225,7 +238,9 @@ class _ProfileViewState extends State<ProfileView> {
                       Container(
                         margin: const EdgeInsets.only(bottom: 20),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 16),
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1A1A1A),
                           borderRadius: BorderRadius.circular(18),
@@ -236,8 +251,11 @@ class _ProfileViewState extends State<ProfileView> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.fingerprint,
-                                    color: AppColors.neonLime, size: 24),
+                                Icon(
+                                  Icons.fingerprint,
+                                  color: AppColors.neonLime,
+                                  size: 24,
+                                ),
                                 const SizedBox(width: 12),
                                 const Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,7 +285,9 @@ class _ProfileViewState extends State<ProfileView> {
                                 profileVM.toggleBiometric(value);
                               },
                               activeThumbColor: AppColors.neonLime,
-                              activeTrackColor: AppColors.neonLime.withValues(alpha: 0.3),
+                              activeTrackColor: AppColors.neonLime.withValues(
+                                alpha: 0.3,
+                              ),
                             ),
                           ],
                         ),
@@ -290,7 +310,8 @@ class _ProfileViewState extends State<ProfileView> {
                               : () => _saveChanges(profileVM),
                           child: profileVM.isSaving
                               ? const CircularProgressIndicator(
-                                  color: AppColors.darkBackground)
+                                  color: AppColors.darkBackground,
+                                )
                               : const Text(
                                   AppStrings.saveChanges,
                                   style: TextStyle(
@@ -308,8 +329,11 @@ class _ProfileViewState extends State<ProfileView> {
                             width: double.infinity,
                             child: TextButton.icon(
                               onPressed: () => _logout(authVM),
-                              icon: const Icon(Icons.logout,
-                                  color: AppColors.error, size: 20),
+                              icon: const Icon(
+                                Icons.logout,
+                                color: AppColors.error,
+                                size: 20,
+                              ),
                               label: const Text(
                                 AppStrings.logoutButton,
                                 style: TextStyle(
@@ -361,10 +385,7 @@ class _ProfileViewState extends State<ProfileView> {
             style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
+              hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
               prefixIcon: Icon(icon, color: AppColors.neonLime, size: 20),
               filled: true,
               fillColor: const Color(0xFF1A1A1A),
@@ -396,11 +417,23 @@ class WaveClipper extends CustomClipper<Path> {
     path.lineTo(0, size.height - 80);
     var firstStart = Offset(size.width / 4, size.height);
     var firstEnd = Offset(size.width / 2.25, size.height - 50);
-    path.quadraticBezierTo(firstStart.dx, firstStart.dy, firstEnd.dx, firstEnd.dy);
-    var secondStart = Offset(size.width - (size.width / 3.25), size.height - 105);
+    path.quadraticBezierTo(
+      firstStart.dx,
+      firstStart.dy,
+      firstEnd.dx,
+      firstEnd.dy,
+    );
+    var secondStart = Offset(
+      size.width - (size.width / 3.25),
+      size.height - 105,
+    );
     var secondEnd = Offset(size.width, size.height - 20);
     path.quadraticBezierTo(
-        secondStart.dx, secondStart.dy, secondEnd.dx, secondEnd.dy);
+      secondStart.dx,
+      secondStart.dy,
+      secondEnd.dx,
+      secondEnd.dy,
+    );
     path.lineTo(size.width, 0);
     path.close();
     return path;

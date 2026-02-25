@@ -230,8 +230,7 @@ class _LoginViewState extends State<LoginView> {
                                   Icons.g_mobiledata,
                                   iconColor: Colors.redAccent,
                                   isGoogle: true,
-                                  onPressed: () =>
-                                      _handleGoogleSignIn(authVM),
+                                  onPressed: () => _handleGoogleSignIn(authVM),
                                   isLoading: authVM.isLoading,
                                 ),
                                 const SizedBox(width: 20),

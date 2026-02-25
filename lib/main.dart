@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'viewmodels/auth_viewmodel.dart';
@@ -10,6 +11,8 @@ import 'utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Firebase before creating any services that depend on it
+  await Firebase.initializeApp();
   runApp(const SecureVaultApp());
 }
 
