@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
-import 'profile_view.dart'; // Usba ang path depende kon asa nimo gibutang
+import '../utils/constants.dart';
+import '../utils/validators.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -13,13 +14,13 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
-  
-  // 1. Gi-separate na ang controllers
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -31,10 +32,56 @@ class _RegisterViewState extends State<RegisterView> {
     super.dispose();
   }
 
+  void _handleRegister(AuthViewModel authVM) async {
+    if (_formKey.currentState!.validate()) {
+      if (_passwordController.text != _confirmPasswordController.text) {
+        if (mounted) {
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(AppStrings.passwordMismatch),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+
+      final success = await authVM.registerWithEmail(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (mounted) {
+        if (success) {
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(AppStrings.successRegistration),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          // ignore: use_build_context_synchronously
+          Navigator.pushReplacementNamed(context, '/profile');
+        } else {
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authVM.errorMessage ?? 'Registration failed'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.darkBackground,
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -42,8 +89,8 @@ class _RegisterViewState extends State<RegisterView> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1A1D0E),
-              Color(0xFFE2FF6F),
+              AppColors.darkOlive,
+              AppColors.neonLime,
             ],
           ),
         ),
@@ -55,15 +102,15 @@ class _RegisterViewState extends State<RegisterView> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Expanded(
                     child: Text(
-                      "Sign up",
+                      AppStrings.registerTitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                       ),
@@ -77,7 +124,7 @@ class _RegisterViewState extends State<RegisterView> {
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Colors.black,
+                  color: AppColors.darkBackground,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(40),
                     topRight: Radius.circular(40),
@@ -90,84 +137,82 @@ class _RegisterViewState extends State<RegisterView> {
                     child: Column(
                       children: [
                         const SizedBox(height: 10),
-                        // First Name Field
                         _buildInputField(
-                          label: "First Name*",
+                          label: AppStrings.firstNameLabel,
                           controller: _firstNameController,
-                          hint: "Steve",
+                          hint: AppStrings.firstNameHint,
+                          validator: Validators.validateFullName,
                         ),
                         const SizedBox(height: 20),
-                        // Last Name Field
                         _buildInputField(
-                          label: "Last Name*",
+                          label: AppStrings.lastNameLabel,
                           controller: _lastNameController,
-                          hint: "Rogers",
+                          hint: AppStrings.lastNameHint,
+                          validator: Validators.validateFullName,
                         ),
                         const SizedBox(height: 20),
-                        // Email Field
                         _buildInputField(
-                          label: "Email address*",
+                          label: AppStrings.emailLabel,
                           controller: _emailController,
-                          hint: "abc@gmail.com",
+                          hint: AppStrings.emailHint,
+                          validator: Validators.validateEmail,
                         ),
                         const SizedBox(height: 20),
-                        // Password Field
                         _buildInputField(
-                          label: "Password*",
+                          label: AppStrings.passwordLabel,
                           controller: _passwordController,
-                          hint: "********",
+                          hint: AppStrings.passwordHint,
                           isPassword: true,
+                          obscureText: _obscurePassword,
+                          onTogglePassword: () {
+                            setState(() => _obscurePassword = !_obscurePassword);
+                          },
+                          validator: Validators.validatePassword,
                         ),
                         const SizedBox(height: 20),
-                        // Confirm Password Field
                         _buildInputField(
-                          label: "Confirm Password*",
+                          label: AppStrings.confirmPasswordLabel,
                           controller: _confirmPasswordController,
-                          hint: "********",
+                          hint: AppStrings.confirmPasswordHint,
                           isPassword: true,
+                          obscureText: _obscureConfirmPassword,
+                          onTogglePassword: () {
+                            setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                          },
+                          validator: (value) =>
+                              Validators.validateConfirmPassword(value, _passwordController.text),
                         ),
                         const SizedBox(height: 40),
-                        
-                        // Register Button with Fixed Structure
                         Consumer<AuthViewModel>(
                           builder: (context, authVM, child) {
                             return SizedBox(
                               width: double.infinity,
                               height: 55,
                               child: ElevatedButton(
-                                onPressed: authVM.isLoading ? null : () {
-                                  if (_formKey.currentState!.validate()) {
-                                    if (_passwordController.text != _confirmPasswordController.text) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text("Passwords do not match!")),
-                                      );
-                                      return;
-                                    }
-                                    // 2. Navigation logic - moadto sa ProfileView
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const ProfileView()),
-                                    );
-                                    
-                                  }
-                                },
+                                onPressed: authVM.isLoading
+                                    ? null
+                                    : () => _handleRegister(authVM),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE2FF6F),
+                                  backgroundColor: AppColors.neonLime,
+                                  disabledBackgroundColor: Colors.grey,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(30),
                                   ),
                                 ),
                                 child: authVM.isLoading
-                                    ? const CircularProgressIndicator(color: Colors.black)
+                                    ? const CircularProgressIndicator(
+                                        color: AppColors.darkBackground,
+                                      )
                                     : Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: const [
-                                          Icon(Icons.auto_awesome, color: Colors.black, size: 20),
+                                          Icon(Icons.auto_awesome,
+                                              color: AppColors.darkBackground, size: 20),
                                           SizedBox(width: 8),
                                           Text(
-                                            "Register",
+                                            AppStrings.registerButton,
                                             style: TextStyle(
-                                              color: Colors.black,
+                                              color: AppColors.darkBackground,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 18,
                                             ),
@@ -181,13 +226,13 @@ class _RegisterViewState extends State<RegisterView> {
                         const SizedBox(height: 30),
                         Text.rich(
                           TextSpan(
-                            text: "Already have an account? ",
+                            text: AppStrings.alreadyHaveAccount,
                             style: const TextStyle(color: Colors.grey),
                             children: [
                               TextSpan(
-                                text: "Login",
+                                text: AppStrings.loginLink,
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 recognizer: TapGestureRecognizer()
@@ -213,32 +258,58 @@ class _RegisterViewState extends State<RegisterView> {
     required TextEditingController controller,
     required String hint,
     bool isPassword = false,
+    bool obscureText = false,
+    VoidCallback? onTogglePassword,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          obscureText: isPassword,
-          style: const TextStyle(color: Colors.white),
+          obscureText: isPassword ? obscureText : false,
+          style: const TextStyle(color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white30),
+            hintStyle: const TextStyle(color: AppColors.textHint),
             filled: true,
-            fillColor: const Color(0xFF121212),
+            fillColor: AppColors.charcoal,
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppColors.textHint,
+                    ),
+                    onPressed: onTogglePassword,
+                  )
+                : null,
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: Colors.white10),
+              borderSide: const BorderSide(color: AppColors.borderLight),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: Color(0xFFE2FF6F)),
+              borderSide: const BorderSide(color: AppColors.borderFocus),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(color: AppColors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(color: AppColors.error, width: 2),
             ),
           ),
-          validator: (value) => (value == null || value.isEmpty) ? "Required" : null,
+          validator: validator,
         ),
       ],
     );
