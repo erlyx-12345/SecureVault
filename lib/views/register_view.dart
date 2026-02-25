@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
+import 'profile_view.dart'; // Usba ang path depende kon asa nimo gibutang
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -9,202 +13,234 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
+  
+  // 1. Gi-separate na ang controllers
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _loading = false;
-  bool _obscure = true;
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
-  }
-
-  void _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _loading = true);
-      // Simulate API Call for Registration
-      await Future.delayed(const Duration(seconds: 2));
-      setState(() => _loading = false);
-      if (mounted) {
-        // After registering, take them to the profile or login
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE4643B),
-              Color(0xFFD84315),
+              Color(0xFF1A1D0E),
+              Color(0xFFE2FF6F),
             ],
           ),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 60),
-            // Header Section
             Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Text("Register", 
-                    style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  const Text("Create your account", 
-                    style: TextStyle(color: Colors.white, fontSize: 18)),
+                  const Expanded(
+                    child: Text(
+                      "Sign up",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            // White Container Section
+            const SizedBox(height: 40),
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.black,
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(60),
-                    topRight: Radius.circular(60),
+                    topLeft: Radius.circular(40),
+                    topRight: Radius.circular(40),
                   ),
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(30),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 40),
-                      // Registration Form
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color.fromRGBO(225, 95, 27, .3),
-                              blurRadius: 20,
-                              offset: Offset(0, 10),
-                            )
-                          ],
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        // First Name Field
+                        _buildInputField(
+                          label: "First Name*",
+                          controller: _firstNameController,
+                          hint: "Steve",
                         ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
+                        const SizedBox(height: 20),
+                        // Last Name Field
+                        _buildInputField(
+                          label: "Last Name*",
+                          controller: _lastNameController,
+                          hint: "Rogers",
+                        ),
+                        const SizedBox(height: 20),
+                        // Email Field
+                        _buildInputField(
+                          label: "Email address*",
+                          controller: _emailController,
+                          hint: "abc@gmail.com",
+                        ),
+                        const SizedBox(height: 20),
+                        // Password Field
+                        _buildInputField(
+                          label: "Password*",
+                          controller: _passwordController,
+                          hint: "********",
+                          isPassword: true,
+                        ),
+                        const SizedBox(height: 20),
+                        // Confirm Password Field
+                        _buildInputField(
+                          label: "Confirm Password*",
+                          controller: _confirmPasswordController,
+                          hint: "********",
+                          isPassword: true,
+                        ),
+                        const SizedBox(height: 40),
+                        
+                        // Register Button with Fixed Structure
+                        Consumer<AuthViewModel>(
+                          builder: (context, authVM, child) {
+                            return SizedBox(
+                              width: double.infinity,
+                              height: 55,
+                              child: ElevatedButton(
+                                onPressed: authVM.isLoading ? null : () {
+                                  if (_formKey.currentState!.validate()) {
+                                    if (_passwordController.text != _confirmPasswordController.text) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text("Passwords do not match!")),
+                                      );
+                                      return;
+                                    }
+                                    // 2. Navigation logic - moadto sa ProfileView
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const ProfileView()),
+                                    );
+                                    
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE2FF6F),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                ),
+                                child: authVM.isLoading
+                                    ? const CircularProgressIndicator(color: Colors.black)
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Icon(Icons.auto_awesome, color: Colors.black, size: 20),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            "Register",
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 30),
+                        Text.rich(
+                          TextSpan(
+                            text: "Already have an account? ",
+                            style: const TextStyle(color: Colors.grey),
                             children: [
-                              _buildInputField(
-                                controller: _nameController,
-                                hint: "Full Name",
-                                isLast: false,
-                              ),
-                              _buildInputField(
-                                controller: _emailController,
-                                hint: "Email Address",
-                                isLast: false,
-                              ),
-                              _buildInputField(
-                                controller: _passwordController,
-                                hint: "Password",
-                                isPassword: true,
-                                isLast: true,
+                              TextSpan(
+                                text: "Login",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () => Navigator.pop(context),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 40),
-                      // Register Button
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 50),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _loading ? null : _handleRegister,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE4643B),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-                            ),
-                            child: _loading 
-                              ? const SizedBox(
-                                  height: 20, 
-                                  width: 20, 
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Text("Sign Up", 
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text("Already have an account?"),
-                          TextButton(
-                            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                            child: const Text("Back to log in", style: TextStyle(color: Color(0xFFE4643B))),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInputField({required TextEditingController controller, required String hint, bool isPassword = false, bool isLast = false}) {
-    TextInputType keyboard = TextInputType.text;
-    if (hint.toLowerCase().contains('email')) keyboard = TextInputType.emailAddress;
-
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: isPassword ? _obscure : false,
-        keyboardType: keyboard,
-        textCapitalization: hint.toLowerCase().contains('name') ? TextCapitalization.words : TextCapitalization.none,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey),
-          border: InputBorder.none,
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                )
-              : null,
+  Widget _buildInputField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    bool isPassword = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.white30),
+            filled: true,
+            fillColor: const Color(0xFF121212),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(color: Colors.white10),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(color: Color(0xFFE2FF6F)),
+            ),
+          ),
+          validator: (value) => (value == null || value.isEmpty) ? "Required" : null,
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) return 'Field required';
-          if (keyboard == TextInputType.emailAddress) {
-            final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}");
-            if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
-          }
-          if (isPassword && (value.length < 6)) return 'Password must be at least 6 characters';
-          return null;
-        },
-      ),
+      ],
     );
   }
 }

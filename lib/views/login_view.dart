@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -12,6 +13,9 @@ class _LoginViewState extends State<LoginView> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
+  
+  // 1. Gidugang ni nga variable para sa show/hide password
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -40,17 +44,15 @@ class _LoginViewState extends State<LoginView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            // UPDATED: Now uses the Lime Green theme for the header gradient
             colors: [
-              Color(0xFF1A1D0E), // Very dark olive/black
-              Color(0xFFE2FF6F), // The Neon Lime color
+              Color(0xFF1A1D0E),
+              Color(0xFFE2FF6F),
             ],
           ),
         ),
         child: Column(
           children: [
             const SizedBox(height: 80),
-            // Centered Header Section
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -59,16 +61,17 @@ class _LoginViewState extends State<LoginView> {
                     "Welcome Back",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Color.fromARGB(255, 255, 255, 255), // Darker text looks better on the light neon gradient
-                      fontSize: 35, 
-                      fontWeight: FontWeight.bold
-                    ),
+                        color: Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 35,
+                        fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10),
                   Text(
                     "Step inside and make yourself at home.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Color.fromARGB(221, 255, 255, 255), fontSize: 18),
+                    style: TextStyle(
+                        color: Color.fromARGB(221, 255, 255, 255),
+                        fontSize: 18),
                   ),
                 ],
               ),
@@ -77,7 +80,7 @@ class _LoginViewState extends State<LoginView> {
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Colors.black, 
+                  color: Colors.black,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(40),
                     topRight: Radius.circular(40),
@@ -104,12 +107,11 @@ class _LoginViewState extends State<LoginView> {
                         ),
                         const SizedBox(height: 20),
                         const Center(
-                          child: Text("Forgot Password?", 
-                              style: TextStyle(color: Colors.white70, fontSize: 14)),
+                          child: Text("Forgot Password?",
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 14)),
                         ),
                         const SizedBox(height: 30),
-                        
-                        // Sign In Button
                         SizedBox(
                           width: double.infinity,
                           height: 55,
@@ -117,51 +119,60 @@ class _LoginViewState extends State<LoginView> {
                             onPressed: _loading ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE2FF6F),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30)),
                             ),
-                            child: _loading 
-                              ? const CircularProgressIndicator(color: Colors.black)
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(Icons.auto_awesome, color: Colors.black, size: 20),
-                                    SizedBox(width: 8),
-                                    Text("Sign in", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
-                                  ],
-                                ),
+                            child: _loading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.black)
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.auto_awesome,
+                                          color: Colors.black, size: 20),
+                                      SizedBox(width: 8),
+                                      Text("Sign in",
+                                          style: TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18)),
+                                    ],
+                                  ),
                           ),
                         ),
-                        
                         const SizedBox(height: 40),
-                        const Text("Or continue with", style: TextStyle(color: Colors.grey)),
+                        const Text("Or continue with",
+                            style: TextStyle(color: Colors.grey)),
                         const SizedBox(height: 30),
-                        
-                        // Social Buttons with colored icons
                         Row(
                           children: [
-                            _buildSocialButton(
-                              "Google", 
-                              Icons.g_mobiledata, 
-                              iconColor: Colors.redAccent, // Mimics Google Red
-                              isGoogle: true 
-                            ),
+                            _buildSocialButton("Google", Icons.g_mobiledata,
+                                iconColor: Colors.redAccent, isGoogle: true),
                             const SizedBox(width: 20),
-                            _buildSocialButton(
-                              "Facebook", 
-                              Icons.facebook, 
-                              iconColor: const Color(0xFF1877F2) // Official Facebook Blue
-                            ),
+                            _buildSocialButton("Facebook", Icons.facebook,
+                                iconColor: const Color(0xFF1877F2)),
                           ],
                         ),
                         const SizedBox(height: 40),
-                        const Text.rich(
+                        Text.rich(
                           TextSpan(
                             text: "Don't have an account? ",
-                            style: TextStyle(color: Colors.grey),
+                            style: const TextStyle(color: Colors.grey),
                             children: [
-                              TextSpan(text: "Sign up", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            ]
-                          )
+                              TextSpan(
+                                text: "Sign up",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    Navigator.pushNamed(context, '/register');
+                                  },
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -175,23 +186,46 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildInputField({required String label, required TextEditingController controller, required String hint, bool isPassword = false}) {
+  Widget _buildInputField(
+      {required String label,
+      required TextEditingController controller,
+      required String hint,
+      bool isPassword = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+        Text(label,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          obscureText: isPassword,
+          // 2. Gigamit ang _obscurePassword variable dinhi
+          obscureText: isPassword ? _obscurePassword : false,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.white30),
             filled: true,
             fillColor: const Color(0xFF121212),
-            suffixIcon: isPassword ? const Icon(Icons.visibility_off_outlined, color: Colors.white30) : null,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            // 3. Gi-update ang suffixIcon para ma-click ug ma-toggle ang icon
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      _obscurePassword 
+                          ? Icons.visibility_off_outlined 
+                          : Icons.visibility_outlined,
+                      color: Colors.white30,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  )
+                : null,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
               borderSide: const BorderSide(color: Colors.white10),
@@ -201,13 +235,27 @@ class _LoginViewState extends State<LoginView> {
               borderSide: const BorderSide(color: Color(0xFFE2FF6F)),
             ),
           ),
-          validator: (value) => (value == null || value.isEmpty) ? "Required" : null,
+          validator: (value) {
+  if (value == null || value.isEmpty) {
+    return "Required";
+  }
+  
+  // Only apply email validation if it's the email field
+  if (label.toLowerCase().contains("email")) {
+    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegExp.hasMatch(value)) {
+      return "Please enter a valid email address";
+    }
+  }
+  return null;
+},
         ),
       ],
     );
   }
 
-  Widget _buildSocialButton(String label, IconData icon, {required Color iconColor, bool isGoogle = false}) {
+  Widget _buildSocialButton(String label, IconData icon,
+      {required Color iconColor, bool isGoogle = false}) {
     return Expanded(
       child: Container(
         height: 55,
@@ -219,14 +267,11 @@ class _LoginViewState extends State<LoginView> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Styled icons to look more like the logos
-            Icon(
-              icon, 
-              color: iconColor, 
-              size: isGoogle ? 35 : 28 // Google icon usually needs to be larger to look right
-            ),
+            Icon(icon, color: iconColor, size: isGoogle ? 35 : 28),
             const SizedBox(width: 8),
-            Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

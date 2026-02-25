@@ -1,13 +1,14 @@
 import 'package:flutter/foundation.dart';
 
-/// Minimal `ProfileViewModel` placeholder used by the app.
+/// Minimal `ProfileViewModel` used by `ProfileView`.
 class ProfileViewModel extends ChangeNotifier {
-	String _name = 'User';
+  String _name = 'User';
 
-	String get name => _name;
+  String get name => _name;
 
-	void updateName(String newName) {
-		_name = newName;
-		notifyListeners();
-	}
+  set name(String value) {
+    if (value == _name) return;
+    _name = value;
+    notifyListeners();
+  }
 }
