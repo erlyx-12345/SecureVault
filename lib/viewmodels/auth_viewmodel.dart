@@ -3,6 +3,8 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
 import '../services/storage_service.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 /// AuthViewModel handles all authentication logic (Login, Register, SSO)
 /// Implements MVVM pattern - manages state and business logic for auth views
@@ -31,8 +33,7 @@ class AuthViewModel extends ChangeNotifier {
     try {
       _currentUser = await _authService.getCurrentUser();
       _isAuthenticated = _currentUser != null;
-      // Use BiometricService API to check availability
-      _biometricAvailable = await _biometricService.isBiometricAvailable();
+      _biometricAvailable = await _biometricService.canCheckBiometrics();
       _clearError();
     } catch (e) {
       _setError('Initialization failed: ${e.toString()}');
@@ -96,9 +97,13 @@ class AuthViewModel extends ChangeNotifier {
       _currentUser = await _authService.signInWithGoogle();
       _isAuthenticated = true;
       _clearError();
+      print(
+        '[AuthViewModel] signInWithGoogle success, currentUser=$_currentUser',
+      );
       return true;
     } catch (e) {
       _setError('Google Sign-In failed: ${e.toString()}');
+      print('[AuthViewModel] signInWithGoogle error: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -224,5 +229,23 @@ class AuthViewModel extends ChangeNotifier {
   /// Clear error message
   void _clearError() {
     _errorMessage = null;
+  }
+
+  StreamSubscription<UserModel?>? _authSub;
+
+  AuthViewModel() {
+    // Listen to Firebase auth state changes as a fallback for SSO flows
+    _authSub = _authService.authStateStream.listen((user) {
+      _currentUser = user;
+      _isAuthenticated = user != null;
+      _clearError();
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 }

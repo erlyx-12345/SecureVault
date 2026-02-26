@@ -1,11 +1,18 @@
-# SecureVault Identity System
+# securevault
 
-A Flutter application implementing secure authentication and authorization using MVVM architecture.
+A new Flutter project.
 
-## Team Members and Roles
 
-- **Member 1 (Solo Developer)**: Lead Architect & Navigation, Core Auth Developer, Security Engineer, UI/UX Designer, Integration Specialist
-
+## Team Members & Roles
+-
+-| Member | Role | Responsibilities |
+-|--------|------|------------------|
+-| M1 | Lead Architect & Navigation | Project setup, folder structure, named routes, MultiProvider configuration |
+-| M2 | Core Auth Developer | AuthViewModel, custom registration, login logic, state management |
+-| M3 | Security Engineer | Secure storage (flutter_secure_storage), biometric authentication (local_auth), password validators |
+-| M4 | UI/UX Designer | LoginView, RegisterView, ProfileView, reusable widgets, Consumer logic |
+-| M5 | Integration Specialist | Google Sign-In, Facebook Login (bonus), profile QA testing |
+-
 ## Features
 
 - **MVVM Architecture**: Strict separation of UI, business logic, and data layers

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
+import '../utils/constants.dart';
 import 'storage_service.dart';
 
 /// Clean, single-file AuthService
@@ -13,7 +14,11 @@ class AuthService {
   AuthService._internal();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    // Use the Web (server) client ID so GoogleSignIn returns an ID token
+    // required by FirebaseAuth when signing in with credentials.
+    clientId: AppStrings.googleWebClientId,
+  );
   final FacebookAuth _facebookAuth = FacebookAuth.instance;
   final StorageService _storage = StorageService();
 
@@ -69,16 +74,32 @@ class AuthService {
   Future<UserModel> signInWithGoogle() async {
     try {
       // Sign out first to force account picker
+      print('[AuthService] Google sign-out (pre)');
       await _googleSignIn.signOut();
+      print('[AuthService] Google sign-out done');
 
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) throw Exception('Google Sign-In cancelled');
+      print('[AuthService] googleUser: $googleUser');
+      if (googleUser == null) {
+        print('[AuthService] Google Sign-In cancelled (googleUser == null)');
+        throw Exception('Google Sign-In cancelled');
+      }
 
       final googleAuth = await googleUser.authentication;
+      print(
+        '[AuthService] googleAuth: accessToken=${googleAuth.accessToken != null}, idToken=${googleAuth.idToken != null}',
+      );
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        print(
+          '[AuthService] Missing tokens: access=${googleAuth.accessToken}, id=${googleAuth.idToken}',
+        );
+        throw Exception('Failed to obtain Google authentication tokens');
+      }
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+      print('[AuthService] Created Google credential');
 
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
@@ -98,28 +119,35 @@ class AuthService {
   // ---------------- Facebook ----------------
   Future<UserModel> signInWithFacebook() async {
     try {
-      // Configure Facebook auth permissions
+      // 🔥 Ensure plugin channel is ready (fix for MIUI / Android 15)
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // 🔥 Reset any previous sessions (important on MIUI)
+      await _facebookAuth.logOut();
+
       final LoginResult result = await _facebookAuth.login(
         permissions: ['email', 'public_profile'],
+        loginBehavior: LoginBehavior.webOnly,
+        loginTracking: LoginTracking.enabled,
       );
 
       if (result.status == LoginStatus.cancelled) {
         throw Exception('Facebook Sign-In cancelled');
       }
+
       if (result.status == LoginStatus.failed) {
         throw Exception('Facebook Sign-In failed: ${result.message}');
       }
 
       final accessToken = result.accessToken;
-      if (accessToken == null) throw Exception('No Facebook access token');
-
-      // Safely extract token from AccessToken
-      final fbToken = accessToken.tokenString;
-      if (fbToken.isEmpty) {
-        throw Exception('No Facebook access token value');
+      if (accessToken == null || accessToken.tokenString.isEmpty) {
+        throw Exception('No Facebook access token');
       }
 
-      final credential = FacebookAuthProvider.credential(fbToken);
+      final credential = FacebookAuthProvider.credential(
+        accessToken.tokenString,
+      );
+
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
       if (user == null) throw Exception('Facebook Sign-In failed');
@@ -194,13 +222,27 @@ class AuthService {
 
   // ---------------- Helpers ----------------
   UserModel _toUserModel(User u) {
-    final displayName = u.displayName ?? '';
-    final parts = displayName.split(' ');
+    final displayName = u.displayName?.trim() ?? '';
+    final email = u.email ?? '';
+    String firstName;
+    String lastName = '';
+
+    if (displayName.isNotEmpty) {
+      final parts = displayName.split(' ');
+      firstName = parts.first;
+      lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    } else if (email.isNotEmpty) {
+      // Fallback to email if displayName is empty
+      firstName = email.split('@').first;
+    } else {
+      firstName = 'User';
+    }
+
     return UserModel(
       uid: u.uid,
-      firstName: parts.isNotEmpty ? parts.first : 'User',
-      lastName: parts.length > 1 ? parts.sublist(1).join(' ') : '',
-      email: u.email ?? '',
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
       profileImageUrl: u.photoURL,
       createdAt: u.metadata.creationTime ?? DateTime.now(),
       biometricEnabled: false,

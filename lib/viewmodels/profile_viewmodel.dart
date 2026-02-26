@@ -2,10 +2,12 @@ import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
+import 'auth_viewmodel.dart';
 
 /// ProfileViewModel handles user profile state and operations
 /// Implements MVVM pattern - manages profile data and updates
 class ProfileViewModel extends ChangeNotifier {
+  final AuthViewModel authVM;
   final AuthService _authService = AuthService();
   final StorageService _storageService = StorageService();
 
@@ -14,6 +16,16 @@ class ProfileViewModel extends ChangeNotifier {
   String? _errorMessage;
   bool _biometricEnabled = false;
   bool _isSaving = false;
+
+  ProfileViewModel({required this.authVM}) {
+    _user = authVM.currentUser;
+    authVM.addListener(_onAuthChanged);
+  }
+
+  void _onAuthChanged() {
+    _user = authVM.currentUser;
+    notifyListeners();
+  }
 
   // Getters
   UserModel? get user => _user;

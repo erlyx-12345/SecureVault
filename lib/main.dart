@@ -11,7 +11,6 @@ import 'utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Firebase before creating any services that depend on it
   await Firebase.initializeApp();
   runApp(const SecureVaultApp());
 }
@@ -24,7 +23,10 @@ class SecureVaultApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
-        ChangeNotifierProvider(create: (_) => ProfileViewModel()),
+        ChangeNotifierProvider(
+          create: (context) =>
+              ProfileViewModel(authVM: context.read<AuthViewModel>()),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -47,27 +49,24 @@ class SecureVaultApp extends StatelessWidget {
               vertical: 18,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.borderLight),
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+              borderSide: BorderSide(color: AppColors.borderLight),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.borderLight),
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+              borderSide: BorderSide(color: AppColors.borderLight),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(
-                color: AppColors.borderFocus,
-                width: 2,
-              ),
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+              borderSide: BorderSide(color: AppColors.borderFocus, width: 2),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.error),
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+              borderSide: BorderSide(color: AppColors.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.error, width: 2),
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+              borderSide: BorderSide(color: AppColors.error, width: 2),
             ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
@@ -107,11 +106,15 @@ class _AuthWrapperState extends State<_AuthWrapper> {
   @override
   void initState() {
     super.initState();
-    _initializeAuth();
+
+    // ✅ Delay initialization until after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeAuth();
+    });
   }
 
-  void _initializeAuth() async {
-    await context.read<AuthViewModel>().initialize();
+  void _initializeAuth() {
+    context.read<AuthViewModel>().initialize();
   }
 
   @override
@@ -135,7 +138,6 @@ class _AuthWrapperState extends State<_AuthWrapper> {
           );
         }
 
-        // Route based on authentication state
         if (authVM.isAuthenticated) {
           return const ProfileView();
         } else {

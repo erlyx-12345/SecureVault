@@ -46,9 +46,6 @@ dependencies {
     // Firebase services you will use
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-
-    // Facebook SDK
-    implementation("com.facebook.android:facebook-login:16.3.0")
 }
 
 flutter {

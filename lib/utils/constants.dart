@@ -87,6 +87,13 @@ class AppStrings {
   static const String googleButton = 'Google';
   static const String facebookButton = 'Facebook';
 
+  // Google OAuth
+  static const String googleAndroidClientId =
+      '272991932657-48adc42b5cc3441e671950.apps.googleusercontent.com';
+  // Web (server) client id - used to request an ID token from GoogleSignIn
+  static const String googleWebClientId =
+      '272991932657-mfbpvv8bkb2qnk4fjkqi5lpr31e0mumv.apps.googleusercontent.com';
+
   // Secure storage keys
   static const String secureTokenKey = 'auth_token';
   static const String biometricEnabledKey = 'biometric_enabled';
