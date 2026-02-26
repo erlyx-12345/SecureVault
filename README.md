@@ -1,152 +1,79 @@
-# SecureVault - Secure Authentication Application
+# SecureVault Identity System
 
-A Flutter application implementing strict MVVM architecture with secure authentication, biometric login, and secure token storage.
+A Flutter application implementing secure authentication and authorization using MVVM architecture.
 
----
+## Team Members and Roles
 
-## Team Members & Roles
-
-| Member | Role | Responsibilities |
-|--------|------|------------------|
-| M1 | Lead Architect & Navigation | Project setup, folder structure, named routes, MultiProvider configuration |
-| M2 | Core Auth Developer | AuthViewModel, custom registration, login logic, state management |
-| M3 | Security Engineer | Secure storage (flutter_secure_storage), biometric authentication (local_auth), password validators |
-| M4 | UI/UX Designer | LoginView, RegisterView, ProfileView, reusable widgets, Consumer logic |
-| M5 | Integration Specialist | Google Sign-In, Facebook Login (bonus), profile QA testing |
-
----
+- **Member 1 (Solo Developer)**: Lead Architect & Navigation, Core Auth Developer, Security Engineer, UI/UX Designer, Integration Specialist
 
 ## Features
 
-### Core Features
-- Secure User Registration (Email/Password)
-- User Login with validation
-- View & Edit User Profile
-- Biometric Authentication (Fingerprint/FaceID)
-- Secure Token Storage
-- Google Sign-In Integration
-- Multi-provider state management (Provider)
+- **MVVM Architecture**: Strict separation of UI, business logic, and data layers
+- **Secure Authentication**:
+  - Custom registration and login with email/password
+  - Google Sign-In integration
+  - Facebook Login (Bonus)
+- **Biometric Security**: Fingerprint/FaceID authentication using local_auth
+- **Secure Storage**: Token storage using flutter_secure_storage
+- **Profile Management**: View and edit user profile with real-time updates
 
-### Bonus Features (Optional)
-- Facebook Login (+5 pts)
-- Dark Mode Toggle with persistence (+5 pts)
-
----
-
-## Project Structure (Strict MVVM)
+## Project Structure
 
 ```
 lib/
-├── main.dart                      # Entry point with routes & MultiProvider
+├── main.dart                  # Entry point with providers and routes
 ├── models/
-│   └── user_model.dart           # User data structure
-├── services/
-│   ├── auth_service.dart         # Firebase & authentication methods
-│   ├── storage_service.dart      # Secure storage implementation
-│   └── biometric_service.dart    # Fingerprint/FaceID logic
-├── viewmodels/
-│   ├── auth_viewmodel.dart       # Authentication logic & state
-│   └── profile_viewmodel.dart    # Profile editing logic & state
+│   └── user_model.dart        # User data structure
 ├── views/
-│   ├── login_view.dart           # Login screen
-│   ├── register_view.dart        # Registration screen
-│   ├── profile_view.dart         # Profile view & edit screen
-│   └── widgets/                  # Reusable UI components
+│   ├── login_view.dart        # Login screen
+│   ├── register_view.dart     # Registration screen
+│   ├── profile_view.dart      # Profile view and edit screen
+│   └── widgets/
+│       └── index.dart         # Reusable UI components
+├── viewmodels/
+│   ├── auth_viewmodel.dart    # Authentication logic and state
+│   └── profile_viewmodel.dart # Profile management logic
+├── services/
+│   ├── auth_service.dart      # Firebase Auth integration
+│   ├── storage_service.dart   # Secure storage implementation
+│   └── biometric_service.dart # Biometric authentication
 └── utils/
-    ├── constants.dart            # Colors, strings, API keys
-    └── validators.dart           # Email/password validation regex
+    ├── constants.dart         # App constants and configurations
+    └── validators.dart        # Input validation utilities
 ```
 
----
+## Setup Instructions
 
-## Getting Started
-
-### Prerequisites
-- Flutter SDK (3.10.7 or higher)
-- Dart SDK
-- Git
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd securevault
-
-# Install dependencies
-flutter pub get
-
-# Run the app
-flutter run
-```
-
----
-
-## Security Features
-
-### Password Requirements
-- Minimum 8 characters
-- At least 1 uppercase letter
-- At least 1 special character (!@#$%^&*)
-
-### Storage
-- Tokens stored securely using `flutter_secure_storage`
-- Passwords NOT stored locally
-- Biometric data managed by device
-
----
-
-## Building APK
-
-```bash
-# Build release APK
-flutter build apk --release
-
-# APK location: build/app/outputs/flutter-apk/app-release.apk
-```
-
----
+1. Clone the repository
+2. Run `flutter pub get` to install dependencies
+3. Configure Firebase:
+   - Add your `google-services.json` to `android/app/`
+   - Enable Authentication in Firebase Console
+   - Add Google and Facebook sign-in methods
+4. Run the app with `flutter run`
 
 ## Dependencies
 
-```yaml
-provider: ^6.0.5          # State management
+- firebase_core: ^3.15.2
+- firebase_auth: ^5.7.0
+- google_sign_in: ^6.1.5
+- flutter_facebook_auth: ^7.1.5
+- flutter_secure_storage: ^9.2.2
+- local_auth: ^2.3.0
+- cloud_firestore: ^5.6.12
+- provider: ^6.0.5
+- image_picker: ^1.0.7
+- cupertino_icons: ^1.0.8
+
+## GitHub Repository
+
+https://github.com/erlyx-12345/SecureVault.git
+
+## APK Build
+
+To build the APK:
+```bash
+flutter build apk --release
 ```
 
----
-
-## Development Guidelines
-
-### Naming Conventions
-- Classes: PascalCase (e.g., `AuthViewModel`)
-- Methods/Variables: camelCase (e.g., `handleLogin()`)
-- Files: snake_case (e.g., `auth_viewmodel.dart`)
-
-### Code Organization
-- **Views**: UI only, no business logic
-- **ViewModels**: State management & logic
-- **Services**: API/Database interactions
-- **Models**: Data structures
-
----
-
-## Testing Checklist
-
-- [ ] Registration with valid/invalid credentials
-- [ ] Login functionality
-- [ ] Profile view displays user data
-- [ ] Edit profile updates immediately (notifyListeners)
-- [ ] Biometric toggle works
-- [ ] Fingerprint login prompts on app restart
-- [ ] Google Sign-In successful
-- [ ] Tokens persist after app restart
-- [ ] Data cleared on logout
-
----
-
-## Submission Requirements
-
-- Public GitHub Repository
-- README.md with team members & roles
-- APK file (.apk compiled) - To be added after development
-
+The APK will be available at `build/app/outputs/flutter-apk/app-release.apk`
