@@ -45,12 +45,95 @@ class SecureVaultApp extends StatelessWidget {
             theme: ThemeData(
               useMaterial3: true,
               brightness: Brightness.light,
-              scaffoldBackgroundColor: Colors.white,
+              scaffoldBackgroundColor: const Color(0xFFF7F7F7),
+              primaryColor: AppColors.neonLime,
+              secondaryHeaderColor: AppColors.darkOlive,
+              textTheme: const TextTheme(
+                bodyMedium: TextStyle(color: Color(0xFF2C2C2C)),
+                labelLarge: TextStyle(color: Color(0xFF2C2C2C)),
+                labelSmall: TextStyle(color: Color(0xFF757575)),
+                bodySmall: TextStyle(color: Color(0xFF757575)),
+              ),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: const Color(0xFFE8F5E9),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 18,
+                ),
+                hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: const BorderSide(color: Color(0xFFC5E1A5), width: 1),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: const BorderSide(color: Color(0xFFC5E1A5), width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: const BorderSide(
+                    color: AppColors.neonLime,
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: const BorderSide(color: AppColors.error),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: const BorderSide(color: AppColors.error, width: 2),
+                ),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.neonLime,
+                  foregroundColor: const Color(0xFF2C2C2C),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.darkOlive,
+                ),
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFFE8F5E9),
+                elevation: 0,
+                iconTheme: IconThemeData(color: Color(0xFF2C2C2C)),
+                titleTextStyle: TextStyle(
+                  color: Color(0xFF2C2C2C),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              cardTheme: CardThemeData(
+                color: Colors.white,
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  side: const BorderSide(color: Color(0xFFE0E0E0)),
+                ),
+              ),
+            ),
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: AppColors.darkBackground,
               primaryColor: AppColors.neonLime,
               secondaryHeaderColor: AppColors.darkOlive,
               textTheme: const TextTheme(
                 bodyMedium: TextStyle(color: AppColors.textPrimary),
                 labelLarge: TextStyle(color: AppColors.textPrimary),
+                labelSmall: TextStyle(color: AppColors.textHint),
+                bodySmall: TextStyle(color: AppColors.textHint),
               ),
               inputDecorationTheme: InputDecorationTheme(
                 filled: true,
@@ -59,28 +142,29 @@ class SecureVaultApp extends StatelessWidget {
                   horizontal: 20,
                   vertical: 18,
                 ),
+                hintStyle: const TextStyle(color: AppColors.textHint),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(15)),
-                  borderSide: BorderSide(color: AppColors.borderLight),
+                  borderSide: const BorderSide(color: AppColors.borderLight),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(15)),
-                  borderSide: BorderSide(color: AppColors.borderLight),
+                  borderSide: const BorderSide(color: AppColors.borderLight),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(15)),
-                  borderSide: BorderSide(
+                  borderSide: const BorderSide(
                     color: AppColors.borderFocus,
                     width: 2,
                   ),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(15)),
-                  borderSide: BorderSide(color: AppColors.error),
+                  borderSide: const BorderSide(color: AppColors.error),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(15)),
-                  borderSide: BorderSide(color: AppColors.error, width: 2),
+                  borderSide: const BorderSide(color: AppColors.error, width: 2),
                 ),
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
@@ -101,16 +185,23 @@ class SecureVaultApp extends StatelessWidget {
                   foregroundColor: AppColors.neonLime,
                 ),
               ),
-            ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              scaffoldBackgroundColor: AppColors.darkBackground,
-              primaryColor: AppColors.neonLime,
-              secondaryHeaderColor: AppColors.darkOlive,
-              textTheme: const TextTheme(
-                bodyMedium: TextStyle(color: AppColors.textPrimary),
-                labelLarge: TextStyle(color: AppColors.textPrimary),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF1A1A1A),
+                elevation: 0,
+                iconTheme: IconThemeData(color: AppColors.neonLime),
+                titleTextStyle: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              cardTheme: CardThemeData(
+                color: const Color(0xFF2A2A2A),
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  side: const BorderSide(color: AppColors.borderLight),
+                ),
               ),
             ),
             themeMode: themeVM.isDarkMode ? ThemeMode.dark : ThemeMode.light,

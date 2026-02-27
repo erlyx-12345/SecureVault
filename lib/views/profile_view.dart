@@ -110,7 +110,7 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer<ProfileViewModel>(
         builder: (context, profileVM, _) {
           // Update controllers when user data is loaded
