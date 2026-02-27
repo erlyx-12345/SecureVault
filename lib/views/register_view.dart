@@ -83,7 +83,7 @@ class _RegisterViewState extends State<RegisterView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.darkBackground,
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
