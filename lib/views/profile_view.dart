@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/profile_viewmodel.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/theme_viewmodel.dart';
 import '../utils/constants.dart';
 
 class ProfileView extends StatefulWidget {
@@ -234,6 +235,67 @@ class _ProfileViewState extends State<ProfileView> {
                         icon: Icons.email_outlined,
                       ),
                       const SizedBox(height: 20),
+                      // Dark Mode Toggle Switch
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1A1A),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.brightness_6,
+                                  color: AppColors.neonLime,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                const Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Dark Mode',
+                                      style: TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Toggle app appearance',
+                                      style: TextStyle(
+                                        color: AppColors.textHint,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Builder(
+                              builder: (context) {
+                                final themeVM = context.watch<ThemeViewModel>();
+                                return Switch(
+                                  value: themeVM.isDarkMode,
+                                  onChanged: (value) =>
+                                      themeVM.toggleTheme(value),
+                                  activeThumbColor: AppColors.neonLime,
+                                  activeTrackColor: AppColors.neonLime
+                                      .withValues(alpha: 0.3),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                       // Biometric Toggle Switch
                       Container(
                         margin: const EdgeInsets.only(bottom: 20),

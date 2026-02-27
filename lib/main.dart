@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/profile_viewmodel.dart';
+import 'viewmodels/theme_viewmodel.dart';
+
 import 'views/login_view.dart';
 import 'views/register_view.dart';
 import 'views/profile_view.dart';
@@ -27,67 +29,98 @@ class SecureVaultApp extends StatelessWidget {
           create: (context) =>
               ProfileViewModel(authVM: context.read<AuthViewModel>()),
         ),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: AppStrings.appName,
-        theme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: AppColors.darkBackground,
-          primaryColor: AppColors.neonLime,
-          secondaryHeaderColor: AppColors.darkOlive,
-          textTheme: const TextTheme(
-            bodyMedium: TextStyle(color: AppColors.textPrimary),
-            labelLarge: TextStyle(color: AppColors.textPrimary),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: AppColors.charcoal,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 18,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-              borderSide: BorderSide(color: AppColors.borderLight),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-              borderSide: BorderSide(color: AppColors.borderLight),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-              borderSide: BorderSide(color: AppColors.borderFocus, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-              borderSide: BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(15)),
-              borderSide: BorderSide(color: AppColors.error, width: 2),
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.neonLime,
-              foregroundColor: AppColors.darkBackground,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            ),
-          ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(foregroundColor: AppColors.neonLime),
-          ),
+        ChangeNotifierProvider<ThemeViewModel>(
+          create: (context) {
+            final vm = ThemeViewModel();
+            vm.loadTheme();
+            return vm;
+          },
         ),
-        home: const _AuthWrapper(),
-        routes: {
-          '/login': (_) => const LoginView(),
-          '/register': (_) => const RegisterView(),
-          '/profile': (_) => const ProfileView(),
+      ],
+      child: Consumer<ThemeViewModel>(
+        builder: (context, themeVM, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: AppStrings.appName,
+            theme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: Colors.white,
+              primaryColor: AppColors.neonLime,
+              secondaryHeaderColor: AppColors.darkOlive,
+              textTheme: const TextTheme(
+                bodyMedium: TextStyle(color: AppColors.textPrimary),
+                labelLarge: TextStyle(color: AppColors.textPrimary),
+              ),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: AppColors.charcoal,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 18,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(color: AppColors.borderLight),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(color: AppColors.borderLight),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(
+                    color: AppColors.borderFocus,
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(color: AppColors.error),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(color: AppColors.error, width: 2),
+                ),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.neonLime,
+                  foregroundColor: AppColors.darkBackground,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.neonLime,
+                ),
+              ),
+            ),
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: AppColors.darkBackground,
+              primaryColor: AppColors.neonLime,
+              secondaryHeaderColor: AppColors.darkOlive,
+              textTheme: const TextTheme(
+                bodyMedium: TextStyle(color: AppColors.textPrimary),
+                labelLarge: TextStyle(color: AppColors.textPrimary),
+              ),
+            ),
+            themeMode: themeVM.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            home: const _AuthWrapper(),
+            routes: {
+              '/login': (_) => const LoginView(),
+              '/register': (_) => const RegisterView(),
+              '/profile': (_) => const ProfileView(),
+            },
+          );
         },
       ),
     );

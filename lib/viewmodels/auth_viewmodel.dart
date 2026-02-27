@@ -4,7 +4,6 @@ import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
 import '../services/storage_service.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 
 /// AuthViewModel handles all authentication logic (Login, Register, SSO)
 /// Implements MVVM pattern - manages state and business logic for auth views

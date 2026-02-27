@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../utils/constants.dart';
 import '../utils/validators.dart';
+import 'widgets/custom_text_field.dart';
+import 'widgets/social_button.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -16,7 +18,6 @@ class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -144,14 +145,14 @@ class _LoginViewState extends State<LoginView> {
                     child: Column(
                       children: [
                         const SizedBox(height: 20),
-                        _buildInputField(
+                        CustomTextField(
                           label: AppStrings.emailLabel,
                           controller: _emailController,
                           hint: AppStrings.emailHint,
                           validator: Validators.validateEmail,
                         ),
                         const SizedBox(height: 20),
-                        _buildInputField(
+                        CustomTextField(
                           label: AppStrings.passwordLabel,
                           controller: _passwordController,
                           hint: AppStrings.passwordHint,
@@ -225,18 +226,18 @@ class _LoginViewState extends State<LoginView> {
                           builder: (context, authVM, child) {
                             return Row(
                               children: [
-                                _buildSocialButton(
-                                  AppStrings.googleButton,
-                                  Icons.g_mobiledata,
+                                SocialButton(
+                                  label: AppStrings.googleButton,
+                                  icon: Icons.g_mobiledata,
                                   iconColor: Colors.redAccent,
                                   isGoogle: true,
                                   onPressed: () => _handleGoogleSignIn(authVM),
                                   isLoading: authVM.isLoading,
                                 ),
                                 const SizedBox(width: 20),
-                                _buildSocialButton(
-                                  AppStrings.facebookButton,
-                                  Icons.facebook,
+                                SocialButton(
+                                  label: AppStrings.facebookButton,
+                                  icon: Icons.facebook,
                                   iconColor: const Color(0xFF1877F2),
                                   onPressed: () =>
                                       _handleFacebookSignIn(authVM),
@@ -274,116 +275,6 @@ class _LoginViewState extends State<LoginView> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    bool isPassword = false,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: isPassword ? _obscurePassword : false,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.textHint),
-            filled: true,
-            fillColor: AppColors.charcoal,
-            suffixIcon: isPassword
-                ? IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      color: AppColors.textHint,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  )
-                : null,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 18,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.borderLight),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.borderFocus),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.error, width: 2),
-            ),
-          ),
-          validator: validator,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSocialButton(
-    String label,
-    IconData icon, {
-    required Color iconColor,
-    bool isGoogle = false,
-    required VoidCallback onPressed,
-    required bool isLoading,
-  }) {
-    return Expanded(
-      child: Container(
-        height: 55,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppColors.borderLight),
-          color: Colors.transparent,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: isLoading ? null : onPressed,
-            borderRadius: BorderRadius.circular(30),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: iconColor, size: isGoogle ? 35 : 28),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

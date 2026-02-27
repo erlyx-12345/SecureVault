@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import '../utils/constants.dart';
 import '../utils/validators.dart';
+import 'widgets/custom_text_field.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -138,28 +139,28 @@ class _RegisterViewState extends State<RegisterView> {
                     child: Column(
                       children: [
                         const SizedBox(height: 10),
-                        _buildInputField(
+                        CustomTextField(
                           label: AppStrings.firstNameLabel,
                           controller: _firstNameController,
                           hint: AppStrings.firstNameHint,
                           validator: Validators.validateFullName,
                         ),
                         const SizedBox(height: 20),
-                        _buildInputField(
+                        CustomTextField(
                           label: AppStrings.lastNameLabel,
                           controller: _lastNameController,
                           hint: AppStrings.lastNameHint,
                           validator: Validators.validateFullName,
                         ),
                         const SizedBox(height: 20),
-                        _buildInputField(
+                        CustomTextField(
                           label: AppStrings.emailLabel,
                           controller: _emailController,
                           hint: AppStrings.emailHint,
                           validator: Validators.validateEmail,
                         ),
                         const SizedBox(height: 20),
-                        _buildInputField(
+                        CustomTextField(
                           label: AppStrings.passwordLabel,
                           controller: _passwordController,
                           hint: AppStrings.passwordHint,
@@ -173,7 +174,7 @@ class _RegisterViewState extends State<RegisterView> {
                           validator: Validators.validatePassword,
                         ),
                         const SizedBox(height: 20),
-                        _buildInputField(
+                        CustomTextField(
                           label: AppStrings.confirmPasswordLabel,
                           controller: _confirmPasswordController,
                           hint: AppStrings.confirmPasswordHint,
@@ -263,73 +264,6 @@ class _RegisterViewState extends State<RegisterView> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildInputField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    bool isPassword = false,
-    bool obscureText = false,
-    VoidCallback? onTogglePassword,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: isPassword ? obscureText : false,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.textHint),
-            filled: true,
-            fillColor: AppColors.charcoal,
-            suffixIcon: isPassword
-                ? IconButton(
-                    icon: Icon(
-                      obscureText
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      color: AppColors.textHint,
-                    ),
-                    onPressed: onTogglePassword,
-                  )
-                : null,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 18,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.borderLight),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.borderFocus),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.error, width: 2),
-            ),
-          ),
-          validator: validator,
-        ),
-      ],
     );
   }
 }
