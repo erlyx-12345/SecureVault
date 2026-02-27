@@ -11,4 +11,5 @@
     <!-- Facebook app id -->
     <string name="facebook_app_id">909814848358637</string>
     <string name="fb_login_protocol_scheme">fb909814848358637</string>
+    <string name="facebook_client_token">387c6a875746419d3de8a137618c1159</string>
 </resources>

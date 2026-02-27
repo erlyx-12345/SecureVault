@@ -127,7 +127,6 @@ class AuthService {
 
       final LoginResult result = await _facebookAuth.login(
         permissions: ['email', 'public_profile'],
-        loginBehavior: LoginBehavior.webOnly,
         loginTracking: LoginTracking.enabled,
       );
 
