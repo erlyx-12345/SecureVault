@@ -29,7 +29,7 @@ class SocialButton extends StatelessWidget {
         height: 55,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppColors.borderLight),
+          border: Border.all(color: Theme.of(context).dividerColor),
           color: Colors.transparent,
         ),
         child: Material(
@@ -44,8 +44,8 @@ class SocialButton extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyMedium!.color,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

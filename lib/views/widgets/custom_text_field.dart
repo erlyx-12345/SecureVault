@@ -33,7 +33,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   void initState() {
     super.initState();
-    _obscure = widget.obscureText;
+    // default to obscured if this is a password field
+    _obscure = widget.obscureText || widget.isPassword;
   }
 
   @override
@@ -43,8 +44,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
       children: [
         Text(
           widget.label,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyMedium!.color,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -52,19 +53,26 @@ class _CustomTextFieldState extends State<CustomTextField> {
         TextFormField(
           controller: widget.controller,
           obscureText: widget.isPassword ? _obscure : false,
-          style: const TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyMedium!.color,
+          ),
           decoration: InputDecoration(
             hintText: widget.hint,
-            hintStyle: const TextStyle(color: AppColors.textHint),
+            hintStyle: TextStyle(
+              color: Theme.of(
+                context,
+              ).textTheme.bodyMedium!.color!.withValues(alpha: 0.5),
+            ),
             filled: true,
-            fillColor: AppColors.charcoal,
             suffixIcon: widget.isPassword
                 ? IconButton(
                     icon: Icon(
                       _obscure
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      color: AppColors.textHint,
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium!.color!.withValues(alpha: 0.6),
                     ),
                     onPressed: () {
                       setState(() {
@@ -80,11 +88,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.borderLight),
+              borderSide: BorderSide(color: Theme.of(context).dividerColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.borderFocus),
+              borderSide: BorderSide(color: AppColors.borderFocus, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),

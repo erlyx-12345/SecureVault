@@ -32,7 +32,6 @@ class SecureVaultApp extends StatelessWidget {
         ChangeNotifierProvider<ThemeViewModel>(
           create: (context) {
             final vm = ThemeViewModel();
-            vm.loadTheme();
             return vm;
           },
         ),
@@ -45,9 +44,71 @@ class SecureVaultApp extends StatelessWidget {
             theme: ThemeData(
               useMaterial3: true,
               brightness: Brightness.light,
-              scaffoldBackgroundColor: Colors.white,
+              scaffoldBackgroundColor: AppColors.lightBackground,
               primaryColor: AppColors.neonLime,
               secondaryHeaderColor: AppColors.darkOlive,
+              cardColor: AppColors.lightSurface,
+              textTheme: const TextTheme(
+                bodyMedium: TextStyle(color: AppColors.textPrimaryLight),
+                labelLarge: TextStyle(color: AppColors.textPrimaryLight),
+              ),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: AppColors.lightSurface,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 18,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(color: AppColors.borderLightLight),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(color: AppColors.borderLightLight),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(
+                    color: AppColors.borderFocusLight,
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(color: AppColors.error),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                  borderSide: BorderSide(color: AppColors.error, width: 2),
+                ),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.neonLime,
+                  foregroundColor: AppColors.darkBackground,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.neonLime,
+                ),
+              ),
+            ),
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: AppColors.darkBackground,
+              primaryColor: AppColors.neonLime,
+              secondaryHeaderColor: AppColors.darkOlive,
+              cardColor: AppColors.charcoal,
               textTheme: const TextTheme(
                 bodyMedium: TextStyle(color: AppColors.textPrimary),
                 labelLarge: TextStyle(color: AppColors.textPrimary),
@@ -102,17 +163,6 @@ class SecureVaultApp extends StatelessWidget {
                 ),
               ),
             ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              scaffoldBackgroundColor: AppColors.darkBackground,
-              primaryColor: AppColors.neonLime,
-              secondaryHeaderColor: AppColors.darkOlive,
-              textTheme: const TextTheme(
-                bodyMedium: TextStyle(color: AppColors.textPrimary),
-                labelLarge: TextStyle(color: AppColors.textPrimary),
-              ),
-            ),
             themeMode: themeVM.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: const _AuthWrapper(),
             routes: {
@@ -152,16 +202,18 @@ class _AuthWrapperState extends State<_AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthViewModel>(
-      builder: (context, authVM, _) {
+    return Consumer2<AuthViewModel, ThemeViewModel>(
+      builder: (context, authVM, themeVM, _) {
         if (authVM.isLoading) {
           return Scaffold(
             body: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [AppColors.darkOlive, AppColors.neonLime],
+                  colors: Theme.of(context).brightness == Brightness.light
+                      ? [AppColors.lightBackground, AppColors.neonLime]
+                      : [AppColors.darkOlive, AppColors.neonLime],
                 ),
               ),
               child: const Center(
@@ -171,7 +223,9 @@ class _AuthWrapperState extends State<_AuthWrapper> {
           );
         }
 
-        if (authVM.isAuthenticated) {
+        if (authVM.isAuthenticated && authVM.currentUser != null) {
+          // Load theme preference for the logged-in user
+          themeVM.setUserId(authVM.currentUser!.uid);
           return const ProfileView();
         } else {
           return const LoginView();

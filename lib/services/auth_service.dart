@@ -39,11 +39,23 @@ class AuthService {
 
       await user.updateDisplayName('$firstName $lastName');
       await user.reload();
+      // Get fresh user data after reload
+      final freshUser = _auth.currentUser;
 
       final token = await user.getIdToken();
       if (token != null) await _storage.saveToken(token);
 
-      return _toUserModel(user);
+      // Create UserModel directly with the provided firstName and lastName
+      // instead of relying on displayName which might not be immediately updated
+      return UserModel(
+        uid: freshUser?.uid ?? user.uid,
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        profileImageUrl: freshUser?.photoURL,
+        createdAt: freshUser?.metadata.creationTime ?? DateTime.now(),
+        biometricEnabled: false,
+      );
     } on FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
     }
@@ -184,6 +196,15 @@ class AuthService {
     await _storage.clearToken();
   }
 
+  /// Send a password reset email to the supplied address
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
   Future<UserModel> updateUserProfile({
     required String uid,
     required String firstName,
@@ -271,8 +292,11 @@ class AuthService {
         return Exception('Too many login attempts. Try again later');
       case 'network-request-failed':
         return Exception('Network error. Check your connection');
+      case 'invalid-credential':
+        return Exception('Invalid credentials. Check your email and password.');
       default:
-        return Exception('Authentication error: ${e.message}');
+        // strip any prefix since the viewmodel will already handle generic errors
+        return Exception(e.message ?? 'Authentication error');
     }
   }
 }

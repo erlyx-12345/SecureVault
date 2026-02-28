@@ -28,4 +28,28 @@ class StorageService {
     final value = await _storage.read(key: AppStrings.biometricEnabledKey);
     return value == 'true';
   }
+
+  // Bio saved per user
+  Future<void> saveUserBio(String userId, String bio) async {
+    final key = 'user_${userId}_bio';
+    await _storage.write(key: key, value: bio);
+  }
+
+  Future<String?> getUserBio(String userId) async {
+    final key = 'user_${userId}_bio';
+    return _storage.read(key: key);
+  }
+
+  // Theme preference saved per user
+  Future<void> saveThemePreference(String userId, bool isDarkMode) async {
+    final key = 'user_${userId}_theme';
+    await _storage.write(key: key, value: isDarkMode ? 'true' : 'false');
+  }
+
+  Future<bool?> getThemePreference(String userId) async {
+    final key = 'user_${userId}_theme';
+    final value = await _storage.read(key: key);
+    if (value == null) return null;
+    return value == 'true';
+  }
 }

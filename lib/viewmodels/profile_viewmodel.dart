@@ -16,6 +16,7 @@ class ProfileViewModel extends ChangeNotifier {
   String? _errorMessage;
   bool _biometricEnabled = false;
   bool _isSaving = false;
+  String? _bio;
 
   ProfileViewModel({required this.authVM}) {
     _user = authVM.currentUser;
@@ -38,7 +39,10 @@ class ProfileViewModel extends ChangeNotifier {
   String get email => _user?.email ?? '';
   String get firstName => _user?.firstName ?? '';
   String get lastName => _user?.lastName ?? '';
-  String? get bio => _user?.bio;
+
+  // Bio from storage (since Firebase Auth doesn't support custom fields like bio)
+  String? get bio => _bio;
+
   String? get profileImageUrl => _user?.profileImageUrl;
 
   /// Initialize ProfileViewModel with user data
@@ -48,6 +52,7 @@ class ProfileViewModel extends ChangeNotifier {
       _user = await _authService.getCurrentUser();
       if (_user != null) {
         _biometricEnabled = await _storageService.getBiometricEnabled();
+        _bio = await _storageService.getUserBio(_user!.uid);
       }
       _clearError();
     } catch (e) {
@@ -61,6 +66,7 @@ class ProfileViewModel extends ChangeNotifier {
   Future<void> setUser(UserModel user) async {
     _user = user;
     _biometricEnabled = await _storageService.getBiometricEnabled();
+    _bio = await _storageService.getUserBio(user.uid);
     notifyListeners();
   }
 
@@ -78,6 +84,12 @@ class ProfileViewModel extends ChangeNotifier {
 
     _setSaving(true);
     try {
+      // Save bio to local storage (since Firebase Auth doesn't support custom fields)
+      if (bio != null && bio.isNotEmpty) {
+        await _storageService.saveUserBio(_user!.uid, bio);
+        _bio = bio;
+      }
+
       _user = await _authService.updateUserProfile(
         uid: _user!.uid,
         firstName: firstName,
@@ -114,10 +126,8 @@ class ProfileViewModel extends ChangeNotifier {
 
   /// Update bio
   void updateBio(String bio) {
-    if (_user != null) {
-      _user = _user!.copyWith(bio: bio);
-      notifyListeners();
-    }
+    _bio = bio;
+    notifyListeners();
   }
 
   /// Update profile image URL
@@ -148,6 +158,9 @@ class ProfileViewModel extends ChangeNotifier {
     _setLoading(true);
     try {
       _user = await _authService.getCurrentUser();
+      if (_user != null) {
+        _bio = await _storageService.getUserBio(_user!.uid);
+      }
       _clearError();
     } catch (e) {
       _setError('Failed to refresh profile: ${e.toString()}');

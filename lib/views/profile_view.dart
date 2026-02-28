@@ -6,6 +6,7 @@ import '../viewmodels/profile_viewmodel.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
 import '../utils/constants.dart';
+import '../services/storage_service.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -19,6 +20,10 @@ class _ProfileViewState extends State<ProfileView> {
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
   late TextEditingController _bioController;
+
+  bool _isEditing = false;
+  final StorageService _storageService = StorageService();
+  String? _currentUserId; // Track current user to detect user changes
 
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
@@ -37,10 +42,18 @@ class _ProfileViewState extends State<ProfileView> {
       final profileVM = context.read<ProfileViewModel>();
       if (authVM.currentUser != null) {
         await profileVM.setUser(authVM.currentUser!);
+        await _loadBio(authVM.currentUser!.uid);
       } else {
         await profileVM.initialize();
       }
     });
+  }
+
+  Future<void> _loadBio(String userId) async {
+    final bio = await _storageService.getUserBio(userId);
+    if (mounted) {
+      _bioController.text = bio ?? '';
+    }
   }
 
   Future<void> _pickImage() async {
@@ -54,7 +67,21 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
+  void _toggleEditMode() {
+    setState(() {
+      _isEditing = !_isEditing;
+    });
+  }
+
   void _saveChanges(ProfileViewModel profileVM) async {
+    // Save bio to local storage
+    if (profileVM.user != null) {
+      await _storageService.saveUserBio(
+        profileVM.user!.uid,
+        _bioController.text.trim(),
+      );
+    }
+
     final success = await profileVM.updateProfile(
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
@@ -77,7 +104,16 @@ class _ProfileViewState extends State<ProfileView> {
             backgroundColor: AppColors.neonLime,
           ),
         );
-        setState(() => _imageFile = null);
+        setState(() {
+          _imageFile = null;
+          _isEditing = false;
+        });
+        // Refresh profile data
+        await profileVM.refreshProfile();
+        // Reload user data in authVM
+        if (mounted) {
+          context.read<AuthViewModel>().initialize();
+        }
       } else {
         // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
@@ -110,11 +146,12 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer<ProfileViewModel>(
         builder: (context, profileVM, _) {
-          // Update controllers when user data is loaded
-          if (profileVM.user != null && _firstNameController.text.isEmpty) {
+          // Update controllers only when user changes
+          if (profileVM.user != null && profileVM.user!.uid != _currentUserId) {
+            _currentUserId = profileVM.user!.uid;
             _firstNameController.text = profileVM.firstName;
             _lastNameController.text = profileVM.lastName;
             _emailController.text = profileVM.email;
@@ -131,11 +168,20 @@ class _ProfileViewState extends State<ProfileView> {
                       clipper: WaveClipper(),
                       child: Container(
                         height: 240,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.bottomLeft,
                             end: Alignment.topRight,
-                            colors: [AppColors.darkOlive, Color(0xFF2D3516)],
+                            colors:
+                                Theme.of(context).brightness == Brightness.light
+                                ? [
+                                    AppColors.lightBackground,
+                                    AppColors.neonLime,
+                                  ]
+                                : [
+                                    AppColors.darkOlive,
+                                    const Color(0xFF2D3516),
+                                  ],
                           ),
                         ),
                       ),
@@ -147,7 +193,7 @@ class _ProfileViewState extends State<ProfileView> {
                         child: Column(
                           children: [
                             GestureDetector(
-                              onTap: _pickImage,
+                              onTap: _isEditing ? _pickImage : null,
                               child: Stack(
                                 children: [
                                   CircleAvatar(
@@ -155,7 +201,11 @@ class _ProfileViewState extends State<ProfileView> {
                                     backgroundColor: AppColors.neonLime,
                                     child: CircleAvatar(
                                       radius: 52,
-                                      backgroundColor: const Color(0xFF333333),
+                                      backgroundColor:
+                                          Theme.of(context).brightness ==
+                                              Brightness.light
+                                          ? AppColors.lightSurface
+                                          : const Color(0xFF333333),
                                       backgroundImage: _imageFile != null
                                           ? FileImage(_imageFile!)
                                           : profileVM.profileImageUrl != null
@@ -166,38 +216,47 @@ class _ProfileViewState extends State<ProfileView> {
                                       child:
                                           (_imageFile == null &&
                                               profileVM.profileImageUrl == null)
-                                          ? const Icon(
+                                          ? Icon(
                                               Icons.person,
                                               size: 60,
-                                              color: Colors.white24,
+                                              color:
+                                                  Theme.of(
+                                                        context,
+                                                      ).brightness ==
+                                                      Brightness.light
+                                                  ? AppColors.textHintLight
+                                                  : Colors.white24,
                                             )
                                           : null,
                                     ),
                                   ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.neonLime,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        size: 18,
-                                        color: AppColors.darkBackground,
+                                  if (_isEditing)
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.neonLime,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt,
+                                          size: 18,
+                                          color: AppColors.darkBackground,
+                                        ),
                                       ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               '${_firstNameController.text} ${_lastNameController.text}',
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium!.color,
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -233,6 +292,7 @@ class _ProfileViewState extends State<ProfileView> {
                         label: 'Email Address',
                         controller: _emailController,
                         icon: Icons.email_outlined,
+                        enabled: false,
                       ),
                       const SizedBox(height: 20),
                       // Dark Mode Toggle Switch
@@ -243,9 +303,11 @@ class _ProfileViewState extends State<ProfileView> {
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A1A1A),
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: AppColors.borderLight),
+                          border: Border.all(
+                            color: Theme.of(context).dividerColor,
+                          ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -258,21 +320,27 @@ class _ProfileViewState extends State<ProfileView> {
                                   size: 24,
                                 ),
                                 const SizedBox(width: 12),
-                                const Column(
+                                Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       'Dark Mode',
                                       style: TextStyle(
-                                        color: AppColors.textPrimary,
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium!.color,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    SizedBox(height: 4),
+                                    const SizedBox(height: 4),
                                     Text(
                                       'Toggle app appearance',
                                       style: TextStyle(
-                                        color: AppColors.textHint,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .color!
+                                            .withValues(alpha: 0.6),
                                         fontSize: 12,
                                       ),
                                     ),
@@ -304,9 +372,11 @@ class _ProfileViewState extends State<ProfileView> {
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A1A1A),
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: AppColors.borderLight),
+                          border: Border.all(
+                            color: Theme.of(context).dividerColor,
+                          ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -319,21 +389,27 @@ class _ProfileViewState extends State<ProfileView> {
                                   size: 24,
                                 ),
                                 const SizedBox(width: 12),
-                                const Column(
+                                Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       AppStrings.enableBiometric,
                                       style: TextStyle(
-                                        color: AppColors.textPrimary,
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium!.color,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    SizedBox(height: 4),
+                                    const SizedBox(height: 4),
                                     Text(
                                       'Fingerprint/Face ID login',
                                       style: TextStyle(
-                                        color: AppColors.textHint,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .color!
+                                            .withValues(alpha: 0.6),
                                         fontSize: 12,
                                       ),
                                     ),
@@ -355,33 +431,86 @@ class _ProfileViewState extends State<ProfileView> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // SAVE CHANGES BUTTON
-                      SizedBox(
-                        width: double.infinity,
-                        height: 55,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.neonLime,
-                            disabledBackgroundColor: Colors.grey,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                          ),
-                          onPressed: profileVM.isSaving
-                              ? null
-                              : () => _saveChanges(profileVM),
-                          child: profileVM.isSaving
-                              ? const CircularProgressIndicator(
-                                  color: AppColors.darkBackground,
-                                )
-                              : const Text(
-                                  AppStrings.saveChanges,
-                                  style: TextStyle(
-                                    color: AppColors.darkBackground,
-                                    fontWeight: FontWeight.bold,
+                      // EDIT / SAVE BUTTONS
+                      Row(
+                        children: [
+                          if (!_isEditing)
+                            Expanded(
+                              child: SizedBox(
+                                height: 55,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.neonLime,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  onPressed: _toggleEditMode,
+                                  child: const Text(
+                                    'EDIT PROFILE',
+                                    style: TextStyle(
+                                      color: AppColors.darkBackground,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                        ),
+                              ),
+                            ),
+                          if (_isEditing) ...[
+                            Expanded(
+                              child: SizedBox(
+                                height: 55,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.neonLime,
+                                    disabledBackgroundColor: Colors.grey,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  onPressed: profileVM.isSaving
+                                      ? null
+                                      : () => _saveChanges(profileVM),
+                                  child: profileVM.isSaving
+                                      ? const CircularProgressIndicator(
+                                          color: AppColors.darkBackground,
+                                        )
+                                      : const Text(
+                                          'SAVE CHANGES',
+                                          style: TextStyle(
+                                            color: AppColors.darkBackground,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: SizedBox(
+                                height: 55,
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(
+                                      color: AppColors.neonLime,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  onPressed: _toggleEditMode,
+                                  child: const Text(
+                                    'CANCEL',
+                                    style: TextStyle(
+                                      color: AppColors.neonLime,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 15),
                       // LOGOUT BUTTON
@@ -426,6 +555,7 @@ class _ProfileViewState extends State<ProfileView> {
     required IconData icon,
     String hint = '',
     int maxLines = 1,
+    bool enabled = true,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -434,8 +564,10 @@ class _ProfileViewState extends State<ProfileView> {
         children: [
           Text(
             label.toUpperCase(),
-            style: const TextStyle(
-              color: AppColors.textHint,
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).textTheme.bodyMedium!.color!.withValues(alpha: 0.6),
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
@@ -444,23 +576,41 @@ class _ProfileViewState extends State<ProfileView> {
           TextFormField(
             controller: controller,
             maxLines: maxLines,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+            readOnly: !_isEditing || !enabled,
+            enabled: _isEditing && enabled,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyMedium!.color,
+              fontSize: 15,
+            ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+              hintStyle: TextStyle(
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium!.color!.withValues(alpha: 0.5),
+                fontSize: 14,
+              ),
               prefixIcon: Icon(icon, color: AppColors.neonLime, size: 20),
               filled: true,
-              fillColor: const Color(0xFF1A1A1A),
+              fillColor: !_isEditing || !enabled
+                  ? Theme.of(context).cardColor.withValues(alpha: 0.5)
+                  : null,
               contentPadding: const EdgeInsets.all(18),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(18),
-                borderSide: const BorderSide(color: AppColors.borderLight),
+                borderSide: BorderSide(color: Theme.of(context).dividerColor),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(18),
-                borderSide: const BorderSide(
+                borderSide: BorderSide(
                   color: AppColors.borderFocus,
                   width: 1.5,
+                ),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: BorderSide(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
                 ),
               ),
             ),

@@ -82,7 +82,33 @@ class AuthViewModel extends ChangeNotifier {
       _clearError();
       return true;
     } catch (e) {
-      _setError('Login failed: ${e.toString()}');
+      String message;
+      // if the exception produced by AuthService contains "Exception:" prefix,
+      // remove it to get a cleaner string. Otherwise just use the text.
+      if (e is Exception) {
+        message = e.toString().replaceFirst('Exception: ', '');
+      } else {
+        message = e.toString();
+      }
+      _setError(message);
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Request password reset email be sent.
+  Future<bool> sendPasswordReset(String email) async {
+    _setLoading(true);
+    try {
+      await _authService.sendPasswordResetEmail(email: email);
+      _clearError();
+      return true;
+    } catch (e) {
+      String message = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : e.toString();
+      _setError(message);
       return false;
     } finally {
       _setLoading(false);
@@ -228,7 +254,11 @@ class AuthViewModel extends ChangeNotifier {
   /// Clear error message
   void _clearError() {
     _errorMessage = null;
+    notifyListeners();
   }
+
+  /// Exposed helper so views can clear the error manually
+  void clearError() => _clearError();
 
   StreamSubscription<UserModel?>? _authSub;
 

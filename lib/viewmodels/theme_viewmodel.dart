@@ -1,30 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../services/storage_service.dart';
 
 class ThemeViewModel extends ChangeNotifier {
-  static const _key = 'isDarkMode';
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final StorageService _storageService = StorageService();
 
   bool _isDarkMode = true;
+  String? _userId;
+
   bool get isDarkMode => _isDarkMode;
 
   ThemeViewModel();
 
-  Future<void> loadTheme() async {
+  /// Load theme preference for a specific user
+  Future<void> loadTheme(String? userId) async {
+    _userId = userId;
+    if (_userId == null) return;
+
     try {
-      final val = await _storage.read(key: _key);
-      if (val != null) {
-        _isDarkMode = val.toLowerCase() == 'true';
+      final isDarkMode = await _storageService.getThemePreference(_userId!);
+      if (isDarkMode != null) {
+        _isDarkMode = isDarkMode;
         notifyListeners();
       }
     } catch (_) {}
   }
 
+  /// Toggle theme and save preference for current user
   Future<void> toggleTheme(bool value) async {
     _isDarkMode = value;
     notifyListeners();
+
+    if (_userId == null) return;
+
     try {
-      await _storage.write(key: _key, value: value ? 'true' : 'false');
+      await _storageService.saveThemePreference(_userId!, value);
     } catch (_) {}
+  }
+
+  /// Update userId (call when user logs in)
+  Future<void> setUserId(String userId) async {
+    _userId = userId;
+    await loadTheme(userId);
   }
 }

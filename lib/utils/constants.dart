@@ -8,6 +8,10 @@ class AppColors {
   static const Color charcoal = Color(0xFF121212); // Deep charcoal background
   static const Color darkBackground = Colors.black; // Pure black background
 
+  // Light mode colors
+  static const Color lightBackground = Colors.white;
+  static const Color lightSurface = Color(0xFFF5F5F5); // Light grey surface
+
   // Semantic colors
   static const Color success = Color(0xFF4CAF50);
   static const Color error = Colors.redAccent;
@@ -19,10 +23,20 @@ class AppColors {
   static const Color textSecondary = Colors.white70;
   static const Color textHint = Colors.white30;
 
+  // Light mode text colors
+  static const Color textPrimaryLight = Colors.black;
+  static const Color textSecondaryLight = Colors.black87;
+  static const Color textHintLight = Colors.black54;
+
   // Border colors
   static const Color borderLight = Colors.white10;
   static const Color borderFocus = neonLime;
   static const Color borderDisabled = Colors.white24;
+
+  // Light mode border colors
+  static const Color borderLightLight = Colors.black12;
+  static const Color borderFocusLight = neonLime;
+  static const Color borderDisabledLight = Colors.black26;
 }
 
 /// App string constants
@@ -99,6 +113,7 @@ class AppStrings {
   static const String biometricEnabledKey = 'biometric_enabled';
   static const String userDataKey = 'user_data';
   static const String refreshTokenKey = 'refresh_token';
+  static const String userBioKey = 'user_bio';
 }
 
 /// Password validation regex patterns

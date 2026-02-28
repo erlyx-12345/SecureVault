@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/theme_viewmodel.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import '../utils/constants.dart';
@@ -82,188 +83,205 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.darkOlive, AppColors.neonLime],
-          ),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 60),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios,
-                      color: AppColors.textPrimary,
-                    ),
-                    onPressed: () => Navigator.pop(context),
+    return Consumer<ThemeViewModel>(
+      builder: (context, themeVM, _) {
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: themeVM.isDarkMode
+                    ? [AppColors.darkOlive, AppColors.neonLime]
+                    : [AppColors.lightBackground, AppColors.neonLime],
+              ),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 60),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_back_ios,
+                          color: AppColors.darkBackground,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      Expanded(
+                        child: Text(
+                          AppStrings.registerTitle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: themeVM.isDarkMode
+                                ? AppColors.textPrimary
+                                : AppColors.textPrimaryLight,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 48),
+                    ],
                   ),
-                  const Expanded(
-                    child: Text(
-                      AppStrings.registerTitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 40),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(40),
+                        topRight: Radius.circular(40),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(30),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 10),
+                            CustomTextField(
+                              label: AppStrings.firstNameLabel,
+                              controller: _firstNameController,
+                              hint: AppStrings.firstNameHint,
+                              validator: Validators.validateFullName,
+                            ),
+                            const SizedBox(height: 20),
+                            CustomTextField(
+                              label: AppStrings.lastNameLabel,
+                              controller: _lastNameController,
+                              hint: AppStrings.lastNameHint,
+                              validator: Validators.validateFullName,
+                            ),
+                            const SizedBox(height: 20),
+                            CustomTextField(
+                              label: AppStrings.emailLabel,
+                              controller: _emailController,
+                              hint: AppStrings.emailHint,
+                              validator: Validators.validateEmail,
+                            ),
+                            const SizedBox(height: 20),
+                            CustomTextField(
+                              label: AppStrings.passwordLabel,
+                              controller: _passwordController,
+                              hint: AppStrings.passwordHint,
+                              isPassword: true,
+                              obscureText: _obscurePassword,
+                              onTogglePassword: () {
+                                setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                );
+                              },
+                              validator: Validators.validatePassword,
+                            ),
+                            const SizedBox(height: 20),
+                            CustomTextField(
+                              label: AppStrings.confirmPasswordLabel,
+                              controller: _confirmPasswordController,
+                              hint: AppStrings.confirmPasswordHint,
+                              isPassword: true,
+                              obscureText: _obscureConfirmPassword,
+                              onTogglePassword: () {
+                                setState(
+                                  () => _obscureConfirmPassword =
+                                      !_obscureConfirmPassword,
+                                );
+                              },
+                              validator: (value) =>
+                                  Validators.validateConfirmPassword(
+                                    value,
+                                    _passwordController.text,
+                                  ),
+                            ),
+                            const SizedBox(height: 40),
+                            Consumer<AuthViewModel>(
+                              builder: (context, authVM, child) {
+                                return SizedBox(
+                                  width: double.infinity,
+                                  height: 55,
+                                  child: ElevatedButton(
+                                    onPressed: authVM.isLoading
+                                        ? null
+                                        : () => _handleRegister(authVM),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.neonLime,
+                                      disabledBackgroundColor: Colors.grey,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                    ),
+                                    child: authVM.isLoading
+                                        ? const CircularProgressIndicator(
+                                            color: AppColors.darkBackground,
+                                          )
+                                        : Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: const [
+                                              Icon(
+                                                Icons.auto_awesome,
+                                                color: AppColors.darkBackground,
+                                                size: 20,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                AppStrings.registerButton,
+                                                style: TextStyle(
+                                                  color:
+                                                      AppColors.darkBackground,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 18,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 30),
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: AppStrings.alreadyHaveAccount,
+                                    style: TextStyle(
+                                      color: themeVM.isDarkMode
+                                          ? AppColors.textHint
+                                          : AppColors.textHintLight,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: AppStrings.loginLink,
+                                    style: TextStyle(
+                                      color: themeVM.isDarkMode
+                                          ? AppColors.textPrimary
+                                          : AppColors.textPrimaryLight,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.darkBackground,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(40),
-                    topRight: Radius.circular(40),
-                  ),
                 ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(30),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 10),
-                        CustomTextField(
-                          label: AppStrings.firstNameLabel,
-                          controller: _firstNameController,
-                          hint: AppStrings.firstNameHint,
-                          validator: Validators.validateFullName,
-                        ),
-                        const SizedBox(height: 20),
-                        CustomTextField(
-                          label: AppStrings.lastNameLabel,
-                          controller: _lastNameController,
-                          hint: AppStrings.lastNameHint,
-                          validator: Validators.validateFullName,
-                        ),
-                        const SizedBox(height: 20),
-                        CustomTextField(
-                          label: AppStrings.emailLabel,
-                          controller: _emailController,
-                          hint: AppStrings.emailHint,
-                          validator: Validators.validateEmail,
-                        ),
-                        const SizedBox(height: 20),
-                        CustomTextField(
-                          label: AppStrings.passwordLabel,
-                          controller: _passwordController,
-                          hint: AppStrings.passwordHint,
-                          isPassword: true,
-                          obscureText: _obscurePassword,
-                          onTogglePassword: () {
-                            setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            );
-                          },
-                          validator: Validators.validatePassword,
-                        ),
-                        const SizedBox(height: 20),
-                        CustomTextField(
-                          label: AppStrings.confirmPasswordLabel,
-                          controller: _confirmPasswordController,
-                          hint: AppStrings.confirmPasswordHint,
-                          isPassword: true,
-                          obscureText: _obscureConfirmPassword,
-                          onTogglePassword: () {
-                            setState(
-                              () => _obscureConfirmPassword =
-                                  !_obscureConfirmPassword,
-                            );
-                          },
-                          validator: (value) =>
-                              Validators.validateConfirmPassword(
-                                value,
-                                _passwordController.text,
-                              ),
-                        ),
-                        const SizedBox(height: 40),
-                        Consumer<AuthViewModel>(
-                          builder: (context, authVM, child) {
-                            return SizedBox(
-                              width: double.infinity,
-                              height: 55,
-                              child: ElevatedButton(
-                                onPressed: authVM.isLoading
-                                    ? null
-                                    : () => _handleRegister(authVM),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.neonLime,
-                                  disabledBackgroundColor: Colors.grey,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                                child: authVM.isLoading
-                                    ? const CircularProgressIndicator(
-                                        color: AppColors.darkBackground,
-                                      )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: const [
-                                          Icon(
-                                            Icons.auto_awesome,
-                                            color: AppColors.darkBackground,
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            AppStrings.registerButton,
-                                            style: TextStyle(
-                                              color: AppColors.darkBackground,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 30),
-                        Text.rich(
-                          TextSpan(
-                            text: AppStrings.alreadyHaveAccount,
-                            style: const TextStyle(color: Colors.grey),
-                            children: [
-                              TextSpan(
-                                text: AppStrings.loginLink,
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
