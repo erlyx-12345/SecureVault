@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 
-/// A rounded button used for social sign‑in (Google / Facebook).
-///
-/// Parameters allow icon toggling, loading state, and callback.
 class SocialButton extends StatelessWidget {
   const SocialButton({
     super.key,

@@ -59,17 +59,15 @@ class _RegisterViewState extends State<RegisterView> {
 
       if (mounted) {
         if (success) {
-          // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(AppStrings.successRegistration),
               backgroundColor: AppColors.success,
             ),
           );
-          // ignore: use_build_context_synchronously
+
           Navigator.pushReplacementNamed(context, '/profile');
         } else {
-          // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(authVM.errorMessage ?? 'Registration failed'),

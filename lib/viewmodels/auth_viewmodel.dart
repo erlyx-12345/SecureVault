@@ -1,32 +1,39 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
 import '../services/storage_service.dart';
 import 'dart:async';
 
-/// AuthViewModel handles all authentication logic (Login, Register, SSO)
-/// Implements MVVM pattern - manages state and business logic for auth views
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final StorageService _storageService = StorageService();
   final BiometricService _biometricService = BiometricService();
 
-  // Authentication state
   UserModel? _currentUser;
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _errorMessage;
   bool _biometricAvailable = false;
 
-  // Getters
+  Duration _sessionDuration = const Duration(minutes: 5);
+  Timer? _sessionTimer;
+
+  AuthCredential? _pendingFacebookCredential;
+  List<String>? _pendingEmailProviders;
+  String? _pendingEmail;
+
+  AuthCredential? get pendingFacebookCredential => _pendingFacebookCredential;
+  List<String>? get pendingEmailProviders => _pendingEmailProviders;
+  String? get pendingEmail => _pendingEmail;
+
   UserModel? get currentUser => _currentUser;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get biometricAvailable => _biometricAvailable;
 
-  /// Initialize ViewModel - check if user is already logged in
   Future<void> initialize() async {
     _setLoading(true);
     try {
@@ -41,7 +48,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Register a new user with email and password
   Future<bool> registerWithEmail({
     required String firstName,
     required String lastName,
@@ -57,6 +63,8 @@ class AuthViewModel extends ChangeNotifier {
         password: password,
       );
       _isAuthenticated = true;
+
+      _startSessionTimer();
       _clearError();
       return true;
     } catch (e) {
@@ -67,7 +75,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Login with email and password
   Future<bool> loginWithEmail({
     required String email,
     required String password,
@@ -79,12 +86,22 @@ class AuthViewModel extends ChangeNotifier {
         password: password,
       );
       _isAuthenticated = true;
+
+      if (_pendingFacebookCredential != null) {
+        try {
+          await _authService.linkCredential(_pendingFacebookCredential!);
+          _pendingFacebookCredential = null;
+          _pendingEmailProviders = null;
+          _pendingEmail = null;
+        } catch (e) {
+          print('[AuthViewModel] linking after email login failed: $e');
+        }
+      }
       _clearError();
       return true;
     } catch (e) {
       String message;
-      // if the exception produced by AuthService contains "Exception:" prefix,
-      // remove it to get a cleaner string. Otherwise just use the text.
+
       if (e is Exception) {
         message = e.toString().replaceFirst('Exception: ', '');
       } else {
@@ -97,7 +114,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Request password reset email be sent.
   Future<bool> sendPasswordReset(String email) async {
     _setLoading(true);
     try {
@@ -115,12 +131,22 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Sign in with Google
   Future<bool> signInWithGoogle() async {
     _setLoading(true);
     try {
       _currentUser = await _authService.signInWithGoogle();
       _isAuthenticated = true;
+      // link any pending facebook credential
+      if (_pendingFacebookCredential != null) {
+        try {
+          await _authService.linkCredential(_pendingFacebookCredential!);
+          _pendingFacebookCredential = null;
+          _pendingEmailProviders = null;
+          _pendingEmail = null;
+        } catch (e) {
+          print('[AuthViewModel] linking after Google login failed: $e');
+        }
+      }
       _clearError();
       print(
         '[AuthViewModel] signInWithGoogle success, currentUser=$_currentUser',
@@ -135,16 +161,42 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Sign in with Facebook
   Future<bool> signInWithFacebook() async {
     _setLoading(true);
     try {
+      // clear any previous conflict state
+      _pendingFacebookCredential = null;
+      _pendingEmailProviders = null;
+      _pendingEmail = null;
+
       _currentUser = await _authService.signInWithFacebook();
       _isAuthenticated = true;
+      // start session timeout
+      _startSessionTimer();
       _clearError();
       return true;
     } catch (e) {
-      _setError('Facebook Sign-In failed: ${e.toString()}');
+      final msg = e.toString();
+      if (msg.toLowerCase().contains('cancel')) {
+        // user cancelled the Facebook flow; don't display error
+        _clearError();
+        return false;
+      }
+      if (e is FirebaseAuthException &&
+          e.code == 'account-exists-with-different-credential' &&
+          e.email != null) {
+        // capture conflict state for UI to resolve
+        _pendingFacebookCredential = e.credential;
+        _pendingEmail = e.email;
+        _pendingEmailProviders = await _authService.fetchSignInMethodsForEmail(
+          e.email!,
+        );
+        _setError(
+          'An account already exists for ${e.email}. Please sign in with one of the listed providers to link Facebook.',
+        );
+        return false;
+      }
+      _setError('Facebook Sign-In failed: $msg');
       return false;
     } finally {
       _setLoading(false);
@@ -162,6 +214,7 @@ class AuthViewModel extends ChangeNotifier {
       final isAuthenticated = await _biometricService.authenticate();
       if (isAuthenticated) {
         _clearError();
+        _startSessionTimer();
         return true;
       } else {
         _setError('Biometric authentication failed');
@@ -173,7 +226,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Update user profile
   Future<bool> updateProfile({
     required String firstName,
     required String lastName,
@@ -205,7 +257,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Enable/disable biometric authentication
   Future<void> setBiometricEnabled(bool enabled) async {
     if (_currentUser == null) {
       _setError('No user logged in');
@@ -222,13 +273,14 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Logout user
   Future<void> logout() async {
     _setLoading(true);
     try {
       await _authService.logout();
       _currentUser = null;
       _isAuthenticated = false;
+      // cancel any running session timer
+      _cancelSessionTimer();
       _clearError();
     } catch (e) {
       _setError('Logout failed: ${e.toString()}');
@@ -237,33 +289,55 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // ========== Private Helper Methods ==========
+  void setSessionDuration(Duration d) {
+    _sessionDuration = d;
+    // restart timer if user is authenticated
+    if (_isAuthenticated) {
+      _startSessionTimer();
+    }
+  }
 
-  /// Set loading state
+  void _startSessionTimer() {
+    _cancelSessionTimer();
+    _sessionTimer = Timer(_sessionDuration, () {
+      _setError('Session expired. Please sign in again.');
+      logout();
+    });
+  }
+
+  void _resetSessionTimer() {
+    if (_isAuthenticated) {
+      _startSessionTimer();
+    }
+  }
+
+  void _cancelSessionTimer() {
+    try {
+      _sessionTimer?.cancel();
+    } catch (_) {}
+    _sessionTimer = null;
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
   }
 
-  /// Set error message
   void _setError(String message) {
     _errorMessage = message;
     notifyListeners();
   }
 
-  /// Clear error message
   void _clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 
-  /// Exposed helper so views can clear the error manually
   void clearError() => _clearError();
 
   StreamSubscription<UserModel?>? _authSub;
 
   AuthViewModel() {
-    // Listen to Firebase auth state changes as a fallback for SSO flows
     _authSub = _authService.authStateStream.listen((user) {
       _currentUser = user;
       _isAuthenticated = user != null;

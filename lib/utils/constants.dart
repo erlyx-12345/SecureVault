@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// App color constants (DO NOT CHANGE - UI/UX brand colors)
 class AppColors {
-  // Primary brand colors
-  static const Color neonLime = Color(0xFFE2FF6F); // Bright lime accent
-  static const Color darkOlive = Color(0xFF1A1D0E); // Dark olive base
-  static const Color charcoal = Color(0xFF121212); // Deep charcoal background
-  static const Color darkBackground = Colors.black; // Pure black background
+  static const Color neonLime = Color(0xFFE2FF6F);
+  static const Color darkOlive = Color(0xFF1A1D0E);
+  static const Color charcoal = Color(0xFF121212);
+  static const Color darkBackground = Colors.black;
 
-  // Light mode colors
   static const Color lightBackground = Colors.white;
   static const Color lightSurface = Color(0xFFF5F5F5); // Light grey surface
 
@@ -122,9 +119,6 @@ class ValidationPatterns {
   static const String emailPattern = r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$';
 
   // Password validation:
-  // - Minimum 8 characters
-  // - At least 1 uppercase letter
-  // - At least 1 special character (!@#$&*~)
   static const String passwordPattern = r'^(?=.*[A-Z])(?=.*[!@#\$&*~]).{8,}$';
 
   // Full name validation (letters, spaces, hyphens)

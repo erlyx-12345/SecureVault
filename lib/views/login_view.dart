@@ -23,7 +23,11 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
-    // clear error message when user edits fields
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthViewModel>().clearError();
+    });
+
     _emailController.addListener(() {
       context.read<AuthViewModel>().clearError();
     });
@@ -48,10 +52,8 @@ class _LoginViewState extends State<LoginView> {
 
       if (mounted) {
         if (success) {
-          // ignore: use_build_context_synchronously
           Navigator.pushReplacementNamed(context, '/profile');
         } else {
-          // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(authVM.errorMessage ?? 'Login failed'),
@@ -67,10 +69,8 @@ class _LoginViewState extends State<LoginView> {
     final success = await authVM.signInWithGoogle();
     if (mounted) {
       if (success) {
-        // ignore: use_build_context_synchronously
         Navigator.pushReplacementNamed(context, '/profile');
       } else {
-        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authVM.errorMessage ?? AppStrings.googleSignInError),
@@ -83,12 +83,19 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> _handleFacebookSignIn(AuthViewModel authVM) async {
     final success = await authVM.signInWithFacebook();
-    if (mounted) {
-      if (success) {
-        // ignore: use_build_context_synchronously
-        Navigator.pushReplacementNamed(context, '/profile');
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pushReplacementNamed(context, '/profile');
+      return;
+    }
+
+    if (authVM.pendingFacebookCredential != null) {
+      _showConflictDialog(authVM);
+    } else {
+      if (authVM.errorMessage != null &&
+          authVM.errorMessage!.toLowerCase().contains('cancel')) {
       } else {
-        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -99,6 +106,40 @@ class _LoginViewState extends State<LoginView> {
         );
       }
     }
+  }
+
+  void _showConflictDialog(AuthViewModel authVM) {
+    final providers = authVM.pendingEmailProviders ?? [];
+    final email = authVM.pendingEmail ?? '';
+    final providerNames = providers
+        .map(
+          (p) => p == 'password'
+              ? 'Email/Password'
+              : p == 'google.com'
+              ? 'Google'
+              : p,
+        )
+        .join(', ');
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Account Conflict'),
+          content: Text(
+            'An account already exists for $email using the following provider(s):\n$providerNames.\n'
+            'Please sign in using one of those providers; once you do the Facebook '
+            'account will automatically be linked.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

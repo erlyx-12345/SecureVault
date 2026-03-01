@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 
-/// A reusable text field used throughout the app.  It handles labels, hints,
-/// password toggling, validation, and consistent styling.
 class CustomTextField extends StatefulWidget {
   const CustomTextField({
     super.key,
@@ -33,7 +31,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   void initState() {
     super.initState();
-    // default to obscured if this is a password field
+
     _obscure = widget.obscureText || widget.isPassword;
   }
 

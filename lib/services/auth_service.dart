@@ -5,8 +5,6 @@ import '../models/user_model.dart';
 import '../utils/constants.dart';
 import 'storage_service.dart';
 
-/// Clean, single-file AuthService
-/// Supports: Email/Password, Google, Facebook via Firebase
 class AuthService {
   // singleton
   static final AuthService _instance = AuthService._internal();
@@ -15,8 +13,6 @@ class AuthService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    // Use the Web (server) client ID so GoogleSignIn returns an ID token
-    // required by FirebaseAuth when signing in with credentials.
     clientId: AppStrings.googleWebClientId,
   );
   final FacebookAuth _facebookAuth = FacebookAuth.instance;
@@ -45,8 +41,6 @@ class AuthService {
       final token = await user.getIdToken();
       if (token != null) await _storage.saveToken(token);
 
-      // Create UserModel directly with the provided firstName and lastName
-      // instead of relying on displayName which might not be immediately updated
       return UserModel(
         uid: freshUser?.uid ?? user.uid,
         firstName: firstName,
@@ -79,6 +73,15 @@ class AuthService {
       return _toUserModel(user);
     } on FirebaseAuthException catch (e) {
       throw _mapFirebaseAuthException(e);
+    }
+  }
+
+  Future<List<String>> fetchSignInMethodsForEmail(String email) async {
+    try {
+      return await _auth.fetchSignInMethodsForEmail(email);
+    } catch (e) {
+      print('[AuthService] fetchSignInMethodsForEmail error: $e');
+      return [];
     }
   }
 
@@ -131,29 +134,40 @@ class AuthService {
   // ---------------- Facebook ----------------
   Future<UserModel> signInWithFacebook() async {
     try {
-      // 🔥 Ensure plugin channel is ready (fix for MIUI / Android 15)
+      // ensure the Facebook SDK is ready (especially on MIUI/Android 15)
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // 🔥 Reset any previous sessions (important on MIUI)
-      await _facebookAuth.logOut();
+      // reset any previous sessions to force a fresh token; keeps things
+      // predictable on phones that reuse sessions implicitly
+      try {
+        await _facebookAuth.logOut();
+      } catch (_) {}
 
       final LoginResult result = await _facebookAuth.login(
         permissions: ['email', 'public_profile'],
+
         loginBehavior: LoginBehavior.webOnly,
         loginTracking: LoginTracking.enabled,
+      );
+      print(
+        '[AuthService] Facebook login result: status=${result.status} message=${result.message}',
       );
 
       if (result.status == LoginStatus.cancelled) {
         throw Exception('Facebook Sign-In cancelled');
       }
-
       if (result.status == LoginStatus.failed) {
         throw Exception('Facebook Sign-In failed: ${result.message}');
+      }
+      if (result.status != LoginStatus.success) {
+        throw Exception('Unexpected Facebook login status: ${result.status}');
       }
 
       final accessToken = result.accessToken;
       if (accessToken == null || accessToken.tokenString.isEmpty) {
-        throw Exception('No Facebook access token');
+        throw Exception(
+          'No Facebook access token; login may have been cancelled or failed',
+        );
       }
 
       final credential = FacebookAuthProvider.credential(
@@ -186,7 +200,7 @@ class AuthService {
 
   Future<void> logout() async {
     await _auth.signOut();
-    // Sign out from Google and Facebook as well
+
     try {
       await _googleSignIn.signOut();
     } catch (_) {}
@@ -196,7 +210,23 @@ class AuthService {
     await _storage.clearToken();
   }
 
-  /// Send a password reset email to the supplied address
+  Future<UserModel> linkCredential(AuthCredential credential) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('No user signed in to link credential');
+      }
+      final userCred = await user.linkWithCredential(credential);
+      final linkedUser = userCred.user;
+      if (linkedUser == null) throw Exception('Linking credential failed');
+      final token = await linkedUser.getIdToken();
+      if (token != null) await _storage.saveToken(token);
+      return _toUserModel(linkedUser);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseAuthException(e);
+    }
+  }
+
   Future<void> sendPasswordResetEmail({required String email}) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);

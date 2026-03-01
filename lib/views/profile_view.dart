@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/profile_viewmodel.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -23,10 +21,7 @@ class _ProfileViewState extends State<ProfileView> {
 
   bool _isEditing = false;
   final StorageService _storageService = StorageService();
-  String? _currentUserId; // Track current user to detect user changes
-
-  File? _imageFile;
-  final ImagePicker _picker = ImagePicker();
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -36,7 +31,6 @@ class _ProfileViewState extends State<ProfileView> {
     _emailController = TextEditingController();
     _bioController = TextEditingController();
 
-    // Initialize ProfileViewModel
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final authVM = context.read<AuthViewModel>();
       final profileVM = context.read<ProfileViewModel>();
@@ -56,17 +50,6 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
-  Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-    );
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
-  }
-
   void _toggleEditMode() {
     setState(() {
       _isEditing = !_isEditing;
@@ -74,7 +57,6 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   void _saveChanges(ProfileViewModel profileVM) async {
-    // Save bio to local storage
     if (profileVM.user != null) {
       await _storageService.saveUserBio(
         profileVM.user!.uid,
@@ -86,11 +68,9 @@ class _ProfileViewState extends State<ProfileView> {
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
       bio: _bioController.text.trim(),
-      profileImageUrl: _imageFile?.path,
     );
 
     if (mounted) {
-      // ignore: use_build_context_synchronously
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -105,17 +85,15 @@ class _ProfileViewState extends State<ProfileView> {
           ),
         );
         setState(() {
-          _imageFile = null;
           _isEditing = false;
         });
-        // Refresh profile data
+
         await profileVM.refreshProfile();
-        // Reload user data in authVM
+
         if (mounted) {
           context.read<AuthViewModel>().initialize();
         }
       } else {
-        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(profileVM.errorMessage ?? 'Update failed'),
@@ -129,7 +107,6 @@ class _ProfileViewState extends State<ProfileView> {
   void _logout(AuthViewModel authVM) async {
     await authVM.logout();
     if (mounted) {
-      // ignore: use_build_context_synchronously
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
   }
@@ -192,62 +169,31 @@ class _ProfileViewState extends State<ProfileView> {
                         padding: const EdgeInsets.only(top: 50),
                         child: Column(
                           children: [
-                            GestureDetector(
-                              onTap: _isEditing ? _pickImage : null,
-                              child: Stack(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 55,
-                                    backgroundColor: AppColors.neonLime,
-                                    child: CircleAvatar(
-                                      radius: 52,
-                                      backgroundColor:
-                                          Theme.of(context).brightness ==
-                                              Brightness.light
-                                          ? AppColors.lightSurface
-                                          : const Color(0xFF333333),
-                                      backgroundImage: _imageFile != null
-                                          ? FileImage(_imageFile!)
-                                          : profileVM.profileImageUrl != null
-                                          ? NetworkImage(
-                                              profileVM.profileImageUrl!,
-                                            )
-                                          : null,
-                                      child:
-                                          (_imageFile == null &&
-                                              profileVM.profileImageUrl == null)
-                                          ? Icon(
-                                              Icons.person,
-                                              size: 60,
-                                              color:
-                                                  Theme.of(
-                                                        context,
-                                                      ).brightness ==
-                                                      Brightness.light
-                                                  ? AppColors.textHintLight
-                                                  : Colors.white24,
-                                            )
-                                          : null,
-                                    ),
-                                  ),
-                                  if (_isEditing)
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.neonLime,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.camera_alt,
-                                          size: 18,
-                                          color: AppColors.darkBackground,
-                                        ),
-                                      ),
-                                    ),
-                                ],
+                            CircleAvatar(
+                              radius: 55,
+                              backgroundColor: AppColors.neonLime,
+                              child: CircleAvatar(
+                                radius: 52,
+                                backgroundColor:
+                                    Theme.of(context).brightness ==
+                                        Brightness.light
+                                    ? AppColors.lightSurface
+                                    : const Color(0xFF333333),
+                                backgroundImage:
+                                    profileVM.profileImageUrl != null
+                                    ? NetworkImage(profileVM.profileImageUrl!)
+                                    : null,
+                                child: profileVM.profileImageUrl == null
+                                    ? Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.light
+                                            ? AppColors.textHintLight
+                                            : Colors.white24,
+                                      )
+                                    : null,
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -621,7 +567,6 @@ class _ProfileViewState extends State<ProfileView> {
   }
 }
 
-// CLIPPER CLASS (Wave Background)
 class WaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
