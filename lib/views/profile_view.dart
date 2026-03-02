@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../viewmodels/profile_viewmodel.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
 import '../utils/constants.dart';
 import '../services/storage_service.dart';
+import 'biometric_setup_view.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -105,9 +107,32 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   void _logout(AuthViewModel authVM) async {
+    // only clear login flag; keep biometric enabled state for next login
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isloggedin', false);
+
     await authVM.logout();
     if (mounted) {
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
+
+  Future<void> _setupBiometric(ProfileViewModel profileVM) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const BiometricSetupView()),
+    );
+
+    // If setup was successful, reload profile to reflect biometric status
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Biometric authentication enabled!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Reload profile to update biometric status
+      await profileVM.initialize();
     }
   }
 
@@ -377,7 +402,36 @@ class _ProfileViewState extends State<ProfileView> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // EDIT / SAVE BUTTONS
+                      // Setup Authentication Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.neonLime,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          onPressed: () => _setupBiometric(
+                            context.read<ProfileViewModel>(),
+                          ),
+                          icon: const Icon(
+                            Icons.fingerprint,
+                            color: AppColors.darkBackground,
+                            size: 22,
+                          ),
+                          label: const Text(
+                            'Setup Biometric Authentication',
+                            style: TextStyle(
+                              color: AppColors.darkBackground,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       Row(
                         children: [
                           if (!_isEditing)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/theme_viewmodel.dart';
 import '../utils/constants.dart';
@@ -19,6 +20,7 @@ class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _showBiometric = false;
 
   @override
   void initState() {
@@ -34,6 +36,30 @@ class _LoginViewState extends State<LoginView> {
     _passwordController.addListener(() {
       context.read<AuthViewModel>().clearError();
     });
+
+    // Check if biometric should be shown
+    _checkBiometricAvailability();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isBiometricEnabled = prefs.getBool('isbiometricenabled') ?? false;
+
+    if (mounted) {
+      setState(() {
+        // show biometric button if user previously enabled it
+        _showBiometric = isBiometricEnabled;
+      });
+    }
+
+    // trigger a one‑time biometric login attempt
+    if (isBiometricEnabled && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // clear any previous biometric error message before trying
+        context.read<AuthViewModel>().clearError();
+        _attemptBiometricLogin();
+      });
+    }
   }
 
   @override
@@ -41,6 +67,22 @@ class _LoginViewState extends State<LoginView> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _attemptBiometricLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final alreadyLogged = prefs.getBool('isloggedin') ?? false;
+    if (alreadyLogged) return; // avoid rerunning after a normal login
+
+    final authVM = context.read<AuthViewModel>();
+    // reset error if the user cancelled previously
+    authVM.clearError();
+    final success = await authVM.authenticateWithBiometric();
+    if (success && mounted) {
+      final prefs2 = await SharedPreferences.getInstance();
+      await prefs2.setBool('isloggedin', true);
+      Navigator.pushReplacementNamed(context, '/profile');
+    }
   }
 
   Future<void> _handleLogin(AuthViewModel authVM) async {
@@ -52,6 +94,10 @@ class _LoginViewState extends State<LoginView> {
 
       if (mounted) {
         if (success) {
+          // Set isloggedin flag in shared preferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('isloggedin', true);
+
           Navigator.pushReplacementNamed(context, '/profile');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -66,14 +112,31 @@ class _LoginViewState extends State<LoginView> {
   }
 
   Future<void> _handleGoogleSignIn(AuthViewModel authVM) async {
-    final success = await authVM.signInWithGoogle();
-    if (mounted) {
+    try {
+      final success = await authVM.signInWithGoogle();
+      print('[LoginView] Google sign-in returned $success, currentUser=${authVM.currentUser} error=${authVM.errorMessage}');
+      if (!mounted) return;
+
       if (success) {
+        // Set isloggedin flag in shared preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isloggedin', true);
+
         Navigator.pushReplacementNamed(context, '/profile');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authVM.errorMessage ?? AppStrings.googleSignInError),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      print('[LoginView] Exception during Google sign-in: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign-in error: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -86,6 +149,10 @@ class _LoginViewState extends State<LoginView> {
     if (!mounted) return;
 
     if (success) {
+      // Set isloggedin flag in shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isloggedin', true);
+
       Navigator.pushReplacementNamed(context, '/profile');
       return;
     }
@@ -248,6 +315,47 @@ class _LoginViewState extends State<LoginView> {
                             ),
                             const SizedBox.shrink(),
                             const SizedBox(height: 30),
+                            // Biometric authentication button
+                            if (_showBiometric)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 20),
+                                child: GestureDetector(
+                                  onTap: _attemptBiometricLogin,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                      horizontal: 20,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: AppColors.neonLime,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.fingerprint,
+                                          color: AppColors.neonLime,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          'Tap to login with biometric',
+                                          style: TextStyle(
+                                            color: AppColors.neonLime,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             Consumer<AuthViewModel>(
                               builder: (context, authVM, child) {
                                 return SizedBox(

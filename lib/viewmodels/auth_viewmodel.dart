@@ -213,11 +213,34 @@ class AuthViewModel extends ChangeNotifier {
     try {
       final isAuthenticated = await _biometricService.authenticate();
       if (isAuthenticated) {
+        // after successful local auth, try to fetch current Firebase user
+        _currentUser = await _authService.getCurrentUser();
+        if (_currentUser == null) {
+          // fallback to a saved local snapshot of the profile (if available)
+          final saved = await _storageService.getSavedUserProfile();
+          if (saved != null) {
+            _currentUser = saved;
+            // treat as authenticated because biometric validated the device
+            _isAuthenticated = true;
+          } else {
+            _isAuthenticated = false;
+          }
+        } else {
+          _isAuthenticated = true;
+          // refresh and save the user profile snapshot for future offline access
+          try {
+            await _storageService.saveUserProfile(_currentUser!);
+          } catch (_) {
+            // if saving fails, continue anyway - user is authenticated
+          }
+        }
         _clearError();
         _startSessionTimer();
+        notifyListeners();
         return true;
       } else {
-        _setError('Biometric authentication failed');
+        // user cancelled or failed biometric - do not treat as an error
+        _clearError();
         return false;
       }
     } catch (e) {
@@ -305,11 +328,6 @@ class AuthViewModel extends ChangeNotifier {
     });
   }
 
-  void _resetSessionTimer() {
-    if (_isAuthenticated) {
-      _startSessionTimer();
-    }
-  }
 
   void _cancelSessionTimer() {
     try {

@@ -67,6 +67,9 @@ class ProfileViewModel extends ChangeNotifier {
     _user = user;
     _biometricEnabled = await _storageService.getBiometricEnabled();
     _bio = await _storageService.getUserBio(user.uid);
+    // If we just logged in with biometric and got a fresh user from Firebase,
+    // save their profile snapshot for future offline access
+    await _storageService.saveUserProfile(user);
     notifyListeners();
   }
 
@@ -141,10 +144,19 @@ class ProfileViewModel extends ChangeNotifier {
   /// Toggle biometric authentication
   Future<void> toggleBiometric(bool enabled) async {
     try {
+      // update both secure storage and shared preferences flag
       await _storageService.setBiometricEnabled(enabled);
+      await _storageService.setBiometricEnabledFlag(enabled);
       _biometricEnabled = enabled;
       if (_user != null) {
         _user = _user!.copyWith(biometricEnabled: enabled);
+      }
+      // Persist or remove a local snapshot of the user profile so biometric
+      // login can restore display data when Firebase session isn't present.
+      if (enabled && _user != null) {
+        await _storageService.saveUserProfile(_user!);
+      } else if (!enabled) {
+        await _storageService.deleteSavedUserProfile();
       }
       _clearError();
       notifyListeners();
